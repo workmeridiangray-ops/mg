@@ -24,8 +24,13 @@ jobs:
           workingDirectory: backend
 
       - name: Sync Brevo API key as a Worker secret
-        if: ${{ secrets.BREVO_API_KEY != '' }}
         working-directory: backend
-        run: echo "${{ secrets.BREVO_API_KEY }}" | npx wrangler secret put BREVO_API_KEY
+        run: |
+          if [ -n "$BREVO_API_KEY" ]; then
+            echo "$BREVO_API_KEY" | npx wrangler secret put BREVO_API_KEY
+          else
+            echo "BREVO_API_KEY secret not set, skipping."
+          fi
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
