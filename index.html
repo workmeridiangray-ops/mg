@@ -3728,7 +3728,7 @@ addEventListener('resize',silkSize);silkSize();
 
 document.getElementById('nf-yr').textContent=new Date().getFullYear();
 /* ---------- enquiry form (no fake success: only reports sent when a real endpoint confirms) ---------- */
-const ENQUIRY_ENDPOINT=''; // after deploying the backend (see backend/README.md), set this to e.g. 'https://api.meridiangray.in/api/contact'
+const ENQUIRY_ENDPOINT='https://meridiangray-backend.work-meridiangray.workers.dev/api/contact'; // after deploying the backend (see backend/README.md), set this to e.g. 'https://api.meridiangray.in/api/contact'
 const dlg=document.getElementById('brief'),form=document.getElementById('enq'),st=document.getElementById('brief-status'),copyBtn=document.getElementById('enq-copy');
 document.getElementById('brief-open').addEventListener('click',()=>{st.textContent='';copyBtn.hidden=true;dlg.showModal();setTimeout(()=>document.getElementById('e-name').focus(),50)});
 document.getElementById('brief-close').addEventListener('click',()=>dlg.close());
