@@ -1,0 +1,31 @@
+name: Deploy backend (Cloudflare Worker)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: backend
+
+      - name: Sync Brevo API key as a Worker secret
+        if: ${{ secrets.BREVO_API_KEY != '' }}
+        working-directory: backend
+        run: echo "${{ secrets.BREVO_API_KEY }}" | npx wrangler secret put BREVO_API_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

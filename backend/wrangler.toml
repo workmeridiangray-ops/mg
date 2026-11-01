@@ -1,0 +1,16 @@
+name = "meridiangray-backend"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "meridiangray-db"
+database_id = "99583afb-2906-4a64-a1cd-863813244d71"
+
+[vars]
+NOTIFY_EMAIL = "info@meridiangray.in"
+SENDER_EMAIL = "no-reply@meridiangray.in"
+ALLOWED_ORIGIN = "https://www.meridiangray.in"
+
+# Set the real secret after deploy with:
+#   npx wrangler secret put BREVO_API_KEY

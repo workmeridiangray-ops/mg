@@ -6593,7 +6593,7 @@ addEventListener('resize',silkSize);silkSize();
 
 document.getElementById('nf-yr').textContent=new Date().getFullYear();
 /* ---------- enquiry form (no fake success: only reports sent when a real endpoint confirms) ---------- */
-const ENQUIRY_ENDPOINT=''; // set to the form-handler URL once it exists
+const ENQUIRY_ENDPOINT=''; // after deploying the backend (see backend/README.md), set this to e.g. 'https://api.meridiangray.in/api/contact'
 const dlg=document.getElementById('brief'),form=document.getElementById('enq'),st=document.getElementById('brief-status'),copyBtn=document.getElementById('enq-copy');
 document.getElementById('brief-open').addEventListener('click',()=>{st.textContent='';copyBtn.hidden=true;dlg.showModal();setTimeout(()=>document.getElementById('e-name').focus(),50)});
 document.getElementById('brief-close').addEventListener('click',()=>dlg.close());
@@ -6604,7 +6604,9 @@ form.addEventListener('submit',async e=>{e.preventDefault();form.querySelectorAl
   if(bad.length){bad.forEach(x=>(x.closest('.f')||x).classList.add('bad'));const first=bad[0];st.textContent='Please complete the highlighted fields.';(first.type==='radio'?form.querySelector('input[name=problem]'):first).focus();return}
   if(!ENQUIRY_ENDPOINT){st.textContent='Online sending is not connected yet, so nothing was sent. Copy your details and email them to info@meridiangray.in.';copyBtn.hidden=false;return}
   st.textContent='Sending…';
-  try{const r=await fetch(ENQUIRY_ENDPOINT,{method:'POST',body:new FormData(form)});if(!r.ok)throw 0;st.textContent='Thank you. Your project details were received. We will reply by your preferred contact method.';form.reset()}
+  const f=new FormData(form);
+  const payload={name:f.get('name'),business_name:f.get('business'),industry:f.get('industry'),email:f.get('email'),main_problem:f.get('problem')||'',current_process:f.get('today'),phone:f.get('phone')||'',website:f.get('website')||'',preferred_contact:f.get('preferred')||'',planned_investment:f.get('investment')||''};
+  try{const r=await fetch(ENQUIRY_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(!r.ok)throw 0;st.textContent='Thank you. Your project details were received. We will reply by your preferred contact method.';form.reset()}
   catch(_){st.textContent='Your details could not be sent. Please try again, or copy them below.';copyBtn.hidden=false}});
 copyBtn.addEventListener('click',()=>{const t=summary();try{navigator.clipboard.writeText(t).then(()=>st.textContent='Details copied to your clipboard.',()=>st.textContent='Copy failed. Please select and copy the fields manually.')}catch(_){st.textContent='Copy failed. Please select and copy the fields manually.'}});
 document.querySelectorAll('[data-brief]').forEach(b=>b.addEventListener('click',()=>document.getElementById('brief-open').click()));
