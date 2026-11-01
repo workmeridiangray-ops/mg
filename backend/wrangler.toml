@@ -14,3 +14,5 @@ ALLOWED_ORIGIN = "https://www.meridiangray.in"
 
 # Set the real secret after deploy with:
 #   npx wrangler secret put BREVO_API_KEY
+
+# Redeploy trigger: 2026-11-01T22:38:33Z — secrets configured
