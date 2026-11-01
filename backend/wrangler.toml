@@ -1,6 +1,7 @@
 name = "meridiangray-backend"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
+account_id = "348471314fadbd57e39a68b2eadb5984"
 
 [[d1_databases]]
 binding = "DB"
