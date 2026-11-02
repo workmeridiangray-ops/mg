@@ -79,6 +79,33 @@ That's it — the refresh token is stored in D1 (`app_settings` table) and reuse
 indefinitely; no further logins needed. If you ever need to reconnect (e.g. a
 different calendar), just visit `/oauth/start` again.
 
+## Zoho CRM integration (one-time setup)
+
+Every Health Check submission is pushed into Zoho CRM as a Lead (standard
+fields only — Name, Email, Phone, Company, Lead Source, and a Description
+containing the full business details and every answer — so this works
+without needing any custom fields set up in Zoho). Connected once, same
+OAuth pattern as Google Calendar above:
+
+1. In the [Zoho API Console](https://api-console.zoho.in/) (use `.com` or
+   `.eu` instead of `.in` if your CRM is on a different data center — check
+   the URL you use to log into Zoho CRM), create a **Server-based
+   Application** client. Authorized redirect URI must be exactly:
+   `https://meridiangray-backend.work-meridiangray.workers.dev/zoho/oauth/callback`
+2. Add its `client_id` / `client_secret` as the `ZOHO_CLIENT_ID` /
+   `ZOHO_CLIENT_SECRET` GitHub repo secrets (same place as the other secrets)
+   — the deploy workflow syncs them to the Worker automatically.
+3. If your CRM isn't on the `.in` data center, update `ZOHO_DC` in
+   `wrangler.toml` (`"com"`, `"eu"`, etc.) and redeploy.
+4. Visit `https://meridiangray-backend.work-meridiangray.workers.dev/zoho/oauth/start`
+   in a browser, signed in as the Zoho CRM account leads should be created
+   under. Approve access. You'll land on a "Zoho CRM connected ✓" page.
+
+The refresh token is stored in D1 (`app_settings` table) and reused
+indefinitely. A failed or not-yet-connected push never blocks the visitor's
+submission or the team notification email — it's purely additive. Reconnect
+any time (e.g. a different Zoho account) by visiting `/zoho/oauth/start` again.
+
 ## Health-check data
 
 Every submission is stored in full: the flattened business-details columns (for

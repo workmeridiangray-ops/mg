@@ -16,6 +16,9 @@ NOTIFY_EMAIL = "info@meridiangray.in"
 # verified on this account. Switch to a no-reply@ address once that's verified too.
 SENDER_EMAIL = "info@meridiangray.in"
 ALLOWED_ORIGIN = "https://www.meridiangray.in"
+# Zoho CRM data center — the part after "zoho." in your CRM login URL
+# (crm.zoho.in -> "in", crm.zoho.com -> "com", crm.zoho.eu -> "eu").
+ZOHO_DC = "in"
 
 # Set the real secret after deploy with:
 #   npx wrangler secret put BREVO_API_KEY

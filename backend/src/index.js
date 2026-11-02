@@ -1,8 +1,9 @@
 /**
  * Meridian Gray — website backend (Cloudflare Worker)
- * Handles: contact/project-brief form, System Finder health-check submission,
- * newsletter signup, and strategy-call booking (with optional real Google
- * Calendar sync). Writes to D1, sends notification email via Brevo.
+ * Handles: contact/project-brief form, System Finder health-check submission
+ * (also pushed into Zoho CRM as a Lead), newsletter signup, and
+ * strategy-call booking (with optional real Google Calendar sync). Writes
+ * to D1, sends notification email via Brevo.
  *
  * Bindings required (set in wrangler.toml / dashboard):
  *   - DB                   : D1 database binding (meridiangray-db)
@@ -11,6 +12,9 @@
  *   - ALLOWED_ORIGIN       : env var, e.g. https://www.meridiangray.in (CORS)
  *   - GOOGLE_CLIENT_ID     : secret, OAuth client id (optional — see README)
  *   - GOOGLE_CLIENT_SECRET : secret, OAuth client secret (optional — see README)
+ *   - ZOHO_CLIENT_ID       : secret, OAuth client id (optional — see README)
+ *   - ZOHO_CLIENT_SECRET   : secret, OAuth client secret (optional — see README)
+ *   - ZOHO_DC              : env var, Zoho data center, e.g. "in" / "com" / "eu"
  */
 
 function corsHeaders(env) {
@@ -327,6 +331,28 @@ async function handleHealthCheck(request, env) {
       <h3>Full Health Check — every question &amp; answer</h3>
       <pre style="white-space:pre-wrap;font:13px/1.5 monospace;background:#F5F6F8;padding:16px;border-radius:8px">${escapeHtml(answers_text || "(not provided)")}</pre>
     `,
+  });
+
+  // Push into Zoho CRM as a Lead — never blocks or fails the submission if
+  // Zoho isn't connected yet or the push itself fails (see /zoho/oauth/start).
+  await pushHealthCheckToZoho(env, {
+    name,
+    email,
+    phone,
+    cc,
+    business_name,
+    sector,
+    business_type,
+    custom_label,
+    website,
+    city,
+    region,
+    branches,
+    team_size,
+    turnover,
+    year_established,
+    scores,
+    answers_text,
   });
 
   return json({ ok: true }, 200, env);
@@ -1167,6 +1193,143 @@ async function handleOAuthCallback(request, env) {
   return oauthHtmlPage("Calendar connected ✓", `<p>Your Google Calendar is now connected. Real-time availability and automatic event creation are live. You can close this tab.</p>`);
 }
 
+// ---------------- Zoho CRM integration ----------------
+// One-time setup: visit /zoho/oauth/start as the Zoho CRM admin, approve
+// access. The resulting refresh token is stored in D1 (app_settings) and
+// reused for every subsequent push — no further logins needed. See README.
+// ZOHO_DC picks the data center (the part after "zoho." in your CRM login
+// URL — "in" for crm.zoho.in, "com" for crm.zoho.com, "eu" for crm.zoho.eu).
+function zohoDc(env) {
+  return (env.ZOHO_DC || "in").replace(/^\./, "");
+}
+
+function handleZohoOAuthStart(env) {
+  if (!env.ZOHO_CLIENT_ID) return json({ error: "ZOHO_CLIENT_ID not configured" }, 500, env);
+  const dc = zohoDc(env);
+  const redirectUri = "https://meridiangray-backend.work-meridiangray.workers.dev/zoho/oauth/callback";
+  const params = new URLSearchParams({
+    client_id: env.ZOHO_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "ZohoCRM.modules.leads.CREATE,ZohoCRM.modules.leads.READ,ZohoCRM.settings.fields.READ",
+    access_type: "offline",
+    prompt: "consent",
+  });
+  return Response.redirect(`https://accounts.zoho.${dc}/oauth/v2/auth?${params.toString()}`, 302);
+}
+
+async function handleZohoOAuthCallback(request, env) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+  const dc = zohoDc(env);
+  if (error) return oauthHtmlPage("Zoho connection failed", `<p>Zoho returned an error: ${error}</p>`);
+  if (!code) return oauthHtmlPage("Zoho connection failed", `<p>No authorization code was returned.</p>`);
+
+  const redirectUri = "https://meridiangray-backend.work-meridiangray.workers.dev/zoho/oauth/callback";
+  const resp = await fetch(`https://accounts.zoho.${dc}/oauth/v2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.ZOHO_CLIENT_ID,
+      client_secret: env.ZOHO_CLIENT_SECRET,
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+    }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.refresh_token) {
+    return oauthHtmlPage(
+      "Zoho connection failed",
+      `<p>Zoho didn't return a refresh token (${resp.status}). The authorization code from Zoho expires in about a minute and can only be used once — go back to <a href="/zoho/oauth/start">/zoho/oauth/start</a> and approve again, without delay this time.</p><pre>${JSON.stringify(data)}</pre>`
+    );
+  }
+  await setAppSetting(env, "zoho_refresh_token", data.refresh_token);
+  return oauthHtmlPage("Zoho CRM connected ✓", `<p>Zoho CRM is now connected. New Health Check leads will be pushed in automatically. You can close this tab.</p>`);
+}
+
+async function getZohoAccessToken(env) {
+  const refreshToken = await getAppSetting(env, "zoho_refresh_token");
+  if (!refreshToken || !env.ZOHO_CLIENT_ID || !env.ZOHO_CLIENT_SECRET) return null;
+  const dc = zohoDc(env);
+  const resp = await fetch(`https://accounts.zoho.${dc}/oauth/v2/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.ZOHO_CLIENT_ID,
+      client_secret: env.ZOHO_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!resp.ok) {
+    console.log("Zoho token refresh failed:", resp.status, await resp.text());
+    return null;
+  }
+  const data = await resp.json();
+  return data.access_token || null;
+}
+
+// Pushes a Health Check submission into Zoho CRM as a Lead. Uses only
+// standard Leads-module fields that exist on every Zoho CRM account by
+// default (Last_Name is the one Zoho requires), so this works without
+// knowing anything about custom fields the account may or may not have —
+// the full business detail and every answer goes into Description, same
+// content as the internal notification email. Never throws: a CRM push
+// failure should never block the visitor's submission or the team email.
+async function pushHealthCheckToZoho(env, hc) {
+  try {
+    const token = await getZohoAccessToken(env);
+    if (!token) return { skipped: true }; // not connected yet — see /zoho/oauth/start
+
+    const nameParts = String(hc.name || "").trim().split(/\s+/);
+    const lastName = nameParts.length > 1 ? nameParts.slice(1).join(" ") : nameParts[0] || "Unknown";
+    const firstName = nameParts.length > 1 ? nameParts[0] : undefined;
+
+    const description = [
+      `Sector: ${hc.sector || "—"} · Type: ${hc.custom_label || hc.business_type || "—"}`,
+      `Website: ${hc.website || "—"} · City: ${hc.city || "—"} · Established: ${hc.year_established || "—"}`,
+      `Operates: ${hc.region || "—"} · Offices: ${hc.branches || "—"} · Team: ${hc.team_size || "—"} · Turnover: ${hc.turnover || "—"}`,
+      `Overall score: ${hc.scores?.overall ?? "n/a"}/100 (Research ${hc.scores?.research ?? "n/a"} · Design ${hc.scores?.design ?? "n/a"} · Develop ${hc.scores?.develop ?? "n/a"} · Automate ${hc.scores?.automate ?? "n/a"} · Market ${hc.scores?.market ?? "n/a"})`,
+      "",
+      "Full Health Check answers:",
+      hc.answers_text || "(not provided)",
+    ].join("\n");
+
+    const dc = zohoDc(env);
+    const resp = await fetch(`https://www.zohoapis.${dc}/crm/v2/Leads`, {
+      method: "POST",
+      headers: { Authorization: `Zoho-oauthtoken ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        data: [
+          {
+            Last_Name: lastName,
+            First_Name: firstName,
+            Email: isEmail(hc.email) ? hc.email : undefined,
+            Phone: hc.phone ? `${hc.cc || ""} ${hc.phone}`.trim() : undefined,
+            Company: hc.business_name || hc.name || "Unknown",
+            Lead_Source: "Website Health Check",
+            Description: description,
+          },
+        ],
+        trigger: [], // never fire the account's own workflow/email automations on this
+      }),
+    });
+
+    const result = await resp.json().catch(() => ({}));
+    const entry = result?.data?.[0];
+    if (!resp.ok || entry?.status !== "success") {
+      console.log("Zoho lead push failed:", resp.status, JSON.stringify(result));
+      return { ok: false, status: resp.status, result };
+    }
+    return { ok: true, id: entry.details?.id };
+  } catch (e) {
+    console.log("Zoho lead push error:", e && e.message);
+    return { ok: false, error: e && e.message };
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -1226,6 +1389,14 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/oauth/callback") {
       return handleOAuthCallback(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/zoho/oauth/start") {
+      return handleZohoOAuthStart(env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/zoho/oauth/callback") {
+      return handleZohoOAuthCallback(request, env);
     }
 
     return json({ error: "Not found" }, 404, env);

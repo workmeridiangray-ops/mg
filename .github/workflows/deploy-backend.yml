@@ -36,8 +36,12 @@ jobs:
           put BREVO_API_KEY "$BREVO_API_KEY"
           put GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
           put GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
+          put ZOHO_CLIENT_ID "$ZOHO_CLIENT_ID"
+          put ZOHO_CLIENT_SECRET "$ZOHO_CLIENT_SECRET"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ZOHO_CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
+          ZOHO_CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
