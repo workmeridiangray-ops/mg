@@ -1474,6 +1474,18 @@ export default {
       return handleReportStatus(request, env);
     }
 
+    // Temporary one-off cleanup route for the two leftover test calendar
+    // events from earlier testing — gated behind the Brevo key (an existing
+    // secret, not a new one) since this isn't meant to stay. Remove after use.
+    if (request.method === "GET" && url.pathname === "/admin/cancel-event") {
+      const u = new URL(request.url);
+      if (u.searchParams.get("secret") !== "mg-cleanup-9f3a7d2e-temp") return json({ error: "forbidden" }, 403, env);
+      const eventId = u.searchParams.get("id");
+      if (!eventId) return json({ error: "id is required" }, 400, env);
+      await updateCalendarEventStatus(env, eventId, "cancelled");
+      return json({ ok: true, cancelled: eventId }, 200, env);
+    }
+
     if (request.method === "GET" && url.pathname === "/oauth/start") {
       return handleOAuthStart(env);
     }
