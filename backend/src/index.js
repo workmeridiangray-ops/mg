@@ -237,6 +237,15 @@ function formatCallDate(dateKey) {
   return `${DAY_NAMES[d.getUTCDay()]}, ${+m[3]} ${MONTH_NAMES[d.getUTCMonth()]} ${m[1]}`;
 }
 
+async function isSlotTaken(env, date, time) {
+  const start = parseSlotToUtc(date, time);
+  if (!start) return false;
+  const end = new Date(start.getTime() + CALL_DURATION_MIN * 60000);
+  const busy = await getBusyTimes(env, start.toISOString(), end.toISOString());
+  if (busy === null) return false; // calendar not connected — can't check, allow it through
+  return busy.some((b) => new Date(b.start).getTime() < end.getTime() && start.getTime() < new Date(b.end).getTime());
+}
+
 async function handleBookCall(request, env) {
   const body = await request.json().catch(() => null);
   if (!body) return json({ error: "Invalid JSON body" }, 400, env);
@@ -261,23 +270,36 @@ async function handleBookCall(request, env) {
     return json({ error: "name and a valid email are required" }, 400, env);
   }
 
+  // Re-check the real calendar right before writing anything — the frontend's
+  // /api/availability already hid taken slots, but this closes the race/direct-
+  // call gap where two requests could otherwise land on the same slot.
+  if (await isSlotTaken(env, date, time)) {
+    return json({ error: "slot_taken", message: "That slot was just taken — please pick another time." }, 409, env);
+  }
+
+  const actionToken = crypto.randomUUID();
+
   await env.DB.prepare(
     `INSERT INTO call_bookings
-      (name, email, phone, cc, business_name, sector, business_type, call_date, call_time, mode, notes, score_overall)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+      (name, email, phone, cc, business_name, sector, business_type, call_date, call_time, mode, notes, score_overall, status, action_token)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   )
-    .bind(name, email, phone, cc, business_name, sector, business_type, date, time, mode, notes, score_overall)
+    .bind(name, email, phone, cc, business_name, sector, business_type, date, time, mode, notes, score_overall, "pending", actionToken)
     .run();
 
   const modeLabel = mode === "phone" ? "Phone call — we call you" : "Video call — Google Meet or Zoom";
   const niceDate = formatCallDate(date);
+  const baseUrl = "https://meridiangray-backend.work-meridiangray.workers.dev";
+  const acceptUrl = `${baseUrl}/api/booking-action?token=${actionToken}&action=accept`;
+  const declineUrl = `${baseUrl}/api/booking-action?token=${actionToken}&action=decline`;
 
-  // Internal notification — team needs to know a slot was taken and confirm it.
+  // Internal notification — team reviews and accepts/declines, nothing is
+  // confirmed to the client until one of these is clicked.
   await sendBrevoEmail(env, {
-    subject: `New call booked — ${business_name || name}, ${niceDate} ${time} IST`,
+    subject: `Call request — ${business_name || name}, ${niceDate} ${time} IST`,
     replyTo: email,
     htmlContent: `
-      <h2>New strategy call booked</h2>
+      <h2>New strategy call requested</h2>
       <p><b>Name:</b> ${name}</p>
       <p><b>Business:</b> ${business_name || "—"}</p>
       <p><b>Sector:</b> ${sector || "—"} &middot; <b>Type:</b> ${business_type || "—"}</p>
@@ -286,36 +308,40 @@ async function handleBookCall(request, env) {
       <p><b>How:</b> ${modeLabel}</p>
       ${score_overall !== null ? `<p><b>Health Check score:</b> ${score_overall}/100</p>` : ""}
       ${notes ? `<p><b>What they want to look at first:</b> ${notes}</p>` : ""}
-      <p>This slot has <b>not</b> been added to any calendar automatically — confirm it with the client and add it to the team calendar manually.</p>
+      <p style="margin-top:20px">
+        <a href="${acceptUrl}" style="background:#1a7f3c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;margin-right:10px">Accept</a>
+        <a href="${declineUrl}" style="background:#b3261e;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Decline</a>
+      </p>
+      <p style="color:#666;font-size:13px">Declining frees this slot immediately and lets the client know to pick another time. The slot is held (tentatively) on the calendar until you choose.</p>
     `,
   });
 
-  // Confirmation to the visitor — this is a transactional booking receipt, not a
-  // marketing/report copy, so it's sent regardless (they need to know it landed).
+  // To the visitor — sets the right expectation: requested, not yet confirmed.
   await sendBrevoEmail(env, {
     to: email,
-    subject: `Your call with Meridian Gray — ${niceDate} at ${time} IST`,
+    subject: `Your call request — ${niceDate} at ${time} IST`,
     htmlContent: `
-      <h2>You're booked in, ${name.split(" ")[0]}.</h2>
+      <h2>Got your request, ${name.split(" ")[0]}.</h2>
       <p><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
-      <p>We'll confirm this slot shortly by email or WhatsApp. If the time doesn't end up working on our end, we'll reach out to find another.</p>
+      <p>We're holding this slot and will confirm shortly by email. If it doesn't end up working on our end, we'll reach out to find another time.</p>
       ${notes ? `<p>You mentioned you'd like to look at: <i>${notes}</i>. We'll come prepared.</p>` : ""}
       <p>— Meridian Gray</p>
     `,
   });
 
-  // Real calendar integration: create an actual event with a Meet link and
-  // invite the visitor, if Google Calendar is connected (see /oauth/start).
-  // Booking already succeeded above regardless — this just upgrades it.
+  // Hold the slot on the real calendar as tentative (so it correctly shows as
+  // busy / blocks other bookings) without presenting it as confirmed yet.
   let calendarResult = null;
   try {
     calendarResult = await createCalendarEvent(env, {
-      summary: `Meridian Gray strategy call — ${business_name || name}`,
+      summary: `[Pending] Meridian Gray strategy call — ${business_name || name}`,
       description: [
         `Business: ${business_name || "—"}`,
         `Sector: ${sector || "—"} · Type: ${business_type || "—"}`,
         score_overall !== null ? `Health Check score: ${score_overall}/100` : null,
         notes ? `Wants to look at: ${notes}` : null,
+        `Accept: ${acceptUrl}`,
+        `Decline: ${declineUrl}`,
       ]
         .filter(Boolean)
         .join("\n"),
@@ -323,10 +349,11 @@ async function handleBookCall(request, env) {
       time,
       attendeeEmail: isEmail(email) ? email : null,
       wantMeet: mode !== "phone",
+      status: "tentative",
     });
     if (calendarResult) {
-      await env.DB.prepare(`UPDATE call_bookings SET calendar_event_id = ?, meet_link = ? WHERE email = ? AND call_date = ? AND call_time = ? ORDER BY id DESC LIMIT 1`)
-        .bind(calendarResult.eventId, calendarResult.meetLink || "", email, date, time)
+      await env.DB.prepare(`UPDATE call_bookings SET calendar_event_id = ?, meet_link = ? WHERE action_token = ?`)
+        .bind(calendarResult.eventId, calendarResult.meetLink || "", actionToken)
         .run()
         .catch(() => {});
     }
@@ -335,6 +362,78 @@ async function handleBookCall(request, env) {
   }
 
   return json({ ok: true, calendar: !!calendarResult }, 200, env);
+}
+
+async function updateCalendarEventStatus(env, eventId, status, summaryPrefix) {
+  const token = await getGoogleAccessToken(env);
+  if (!token || !eventId) return;
+  const patch = { status };
+  if (summaryPrefix !== undefined) {
+    // fetch current summary to replace just the prefix
+    const getResp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (getResp.ok) {
+      const ev = await getResp.json();
+      patch.summary = (ev.summary || "").replace(/^\[.*?\]\s*/, summaryPrefix ? `[${summaryPrefix}] ` : "");
+    }
+  }
+  const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}?sendUpdates=all`, {
+    method: "PATCH",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  });
+  if (!resp.ok) console.log("Calendar status update failed:", resp.status, await resp.text());
+}
+
+async function handleBookingAction(request, env) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token") || "";
+  const action = url.searchParams.get("action") || "";
+  if (!token || !["accept", "decline"].includes(action)) {
+    return oauthHtmlPage("Invalid link", `<p>This link is missing information and can't be processed.</p>`);
+  }
+
+  const row = await env.DB.prepare(`SELECT * FROM call_bookings WHERE action_token = ?`).bind(token).first();
+  if (!row) return oauthHtmlPage("Not found", `<p>This booking couldn't be found — it may have already been removed.</p>`);
+
+  if (row.status !== "pending") {
+    return oauthHtmlPage(
+      "Already handled",
+      `<p>This booking was already marked <b>${row.status}</b> — no change made.</p>`
+    );
+  }
+
+  const niceDate = formatCallDate(row.call_date);
+  const newStatus = action === "accept" ? "confirmed" : "declined";
+  await env.DB.prepare(`UPDATE call_bookings SET status = ? WHERE action_token = ?`).bind(newStatus, token).run();
+
+  if (action === "accept") {
+    await updateCalendarEventStatus(env, row.calendar_event_id, "confirmed", "");
+    await sendBrevoEmail(env, {
+      to: row.email,
+      subject: `Confirmed — your call on ${niceDate} at ${row.call_time} IST`,
+      htmlContent: `
+        <h2>You're confirmed, ${String(row.name).split(" ")[0]}.</h2>
+        <p><b>${niceDate} at ${row.call_time} IST</b>, 30 minutes${row.meet_link ? `, via <a href="${row.meet_link}">${row.meet_link}</a>` : ""}.</p>
+        <p>See you then — reply to this email any time before the call if anything changes.</p>
+        <p>— Meridian Gray</p>
+      `,
+    });
+    return oauthHtmlPage("Accepted ✓", `<p>Confirmed with ${row.name} for ${niceDate} at ${row.call_time} IST. They've been emailed.</p>`);
+  } else {
+    await updateCalendarEventStatus(env, row.calendar_event_id, "cancelled");
+    await sendBrevoEmail(env, {
+      to: row.email,
+      subject: `About your call request — ${niceDate} at ${row.call_time} IST`,
+      htmlContent: `
+        <h2>That time doesn't work for us, ${String(row.name).split(" ")[0]}.</h2>
+        <p>Sorry about that — could you pick another slot? <a href="https://www.meridiangray.in/where-you-stand.html">Choose a new time</a>.</p>
+        <p>— Meridian Gray</p>
+      `,
+    });
+    return oauthHtmlPage("Declined", `<p>Declined ${row.name}'s request for ${niceDate} at ${row.call_time} IST. They've been emailed and the slot is free again.</p>`);
+  }
 }
 
 // ---------------- Google Calendar integration ----------------
@@ -404,7 +503,7 @@ async function getBusyTimes(env, timeMinISO, timeMaxISO) {
   return (data.calendars && data.calendars.primary && data.calendars.primary.busy) || [];
 }
 
-async function createCalendarEvent(env, { summary, description, date, time, attendeeEmail, wantMeet }) {
+async function createCalendarEvent(env, { summary, description, date, time, attendeeEmail, wantMeet, status }) {
   const token = await getGoogleAccessToken(env);
   if (!token) return null; // calendar not connected yet
   const start = parseSlotToUtc(date, time);
@@ -418,6 +517,7 @@ async function createCalendarEvent(env, { summary, description, date, time, atte
     end: { dateTime: end.toISOString(), timeZone: "Asia/Kolkata" },
     attendees: attendeeEmail ? [{ email: attendeeEmail }] : [],
     reminders: { useDefault: true },
+    status: status || "confirmed",
   };
   if (wantMeet) {
     event.conferenceData = {
@@ -554,6 +654,10 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/api/availability") {
       return handleAvailability(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/booking-action") {
+      return handleBookingAction(request, env);
     }
 
     if (request.method === "GET" && url.pathname === "/oauth/start") {
