@@ -104,78 +104,100 @@ async function handleContact(request, env) {
   return json({ ok: true }, 200, env);
 }
 
-// Simple, transparent scoring: each discipline gets a 0-100 score from the
-// answers object the frontend sends, e.g. { strategy: 3, design: 2, ... } on
-// a 0-5 scale per question, averaged and scaled. Frontend owns the question
-// set; backend just persists + computes a weighted overall score.
-function scoreHealthCheck(answers) {
-  const disciplines = ["strategy", "design", "develop", "automate", "market"];
-  const scores = {};
-  for (const d of disciplines) {
-    const vals = Array.isArray(answers?.[d]) ? answers[d] : [];
-    if (vals.length === 0) {
-      scores[d] = null;
-      continue;
-    }
-    const avg = vals.reduce((a, b) => a + Number(b || 0), 0) / vals.length;
-    scores[d] = Math.round((avg / 5) * 100);
-  }
-  const present = Object.values(scores).filter((v) => v !== null);
-  const overall = present.length ? Math.round(present.reduce((a, b) => a + b, 0) / present.length) : null;
-  return { overall, ...scores };
-}
-
+// The frontend System Finder already computes its own weighted scores per
+// sector (research/design/develop/automate/market + overall), so the backend
+// trusts and stores what it sends rather than recomputing from raw answers —
+// the raw answers (every question id -> chosen option index/indices) and the
+// visitor's full info form are stored as-is (JSON) so nothing is lost even if
+// the question set changes later.
 async function handleHealthCheck(request, env) {
   const body = await request.json().catch(() => null);
   if (!body) return json({ error: "Invalid JSON body" }, 400, env);
 
-  const { sector = "", business_type = "", business_name = "", email = "", phone = "", answers = {} } = body;
+  const {
+    sector = "",
+    business_type = "",
+    custom_label = "",
+    answers = {},
+    scores = {},
+    info = {},
+  } = body;
 
   if (!sector || !business_type) {
     return json({ error: "sector and business_type are required" }, 400, env);
   }
 
-  const scores = scoreHealthCheck(answers);
+  const {
+    name = "",
+    email = "",
+    phone = "",
+    cc = "",
+    biz: business_name = "",
+    role = "",
+    web: website = "",
+    year: year_established = "",
+    city = "",
+    region = "",
+    branches = "",
+    team: team_size = "",
+    turnover = "",
+  } = info;
 
   await env.DB.prepare(
     `INSERT INTO health_check_submissions
-      (sector, business_type, business_name, email, phone, answers_json, score_overall, score_strategy, score_design, score_develop, score_automate, score_market)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+      (sector, business_type, custom_label, business_name, name, role, email, phone, cc,
+       website, year_established, city, region, branches, team_size, turnover,
+       answers_json, info_json,
+       score_overall, score_research, score_design, score_develop, score_automate, score_market)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   )
     .bind(
       sector,
       business_type,
+      custom_label,
       business_name,
+      name,
+      role,
       email,
       phone,
+      cc,
+      website,
+      year_established,
+      city,
+      region,
+      branches,
+      team_size,
+      turnover,
       JSON.stringify(answers),
-      scores.overall,
-      scores.strategy,
-      scores.design,
-      scores.develop,
-      scores.automate,
-      scores.market
+      JSON.stringify(info),
+      scores.overall ?? null,
+      scores.research ?? null,
+      scores.design ?? null,
+      scores.develop ?? null,
+      scores.automate ?? null,
+      scores.market ?? null
     )
     .run();
 
   if (isEmail(email)) {
     await sendBrevoEmail(env, {
       subject: `New Health Check — ${business_name || sector}`,
-      replyTo: isEmail(email) ? email : undefined,
+      replyTo: email,
       htmlContent: `
         <h2>New Business Health Check submitted</h2>
-        <p><b>Sector:</b> ${sector}</p>
-        <p><b>Business type:</b> ${business_type}</p>
-        <p><b>Business name:</b> ${business_name}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Phone:</b> ${phone}</p>
+        <p><b>Name:</b> ${name} ${role ? `(${role})` : ""}</p>
+        <p><b>Business:</b> ${business_name}</p>
+        <p><b>Sector:</b> ${sector} &middot; <b>Type:</b> ${custom_label || business_type}</p>
+        <p><b>Email:</b> ${email} &middot; <b>Phone:</b> ${cc} ${phone}</p>
+        <p><b>Website:</b> ${website || "—"} &middot; <b>City:</b> ${city || "—"} &middot; <b>Established:</b> ${year_established || "—"}</p>
+        <p><b>Operates:</b> ${region || "—"} &middot; <b>Offices:</b> ${branches || "—"} &middot; <b>Team:</b> ${team_size || "—"} &middot; <b>Turnover:</b> ${turnover || "—"}</p>
         <p><b>Overall score:</b> ${scores.overall ?? "n/a"}/100</p>
-        <p><b>Strategy:</b> ${scores.strategy ?? "n/a"} &middot; <b>Design:</b> ${scores.design ?? "n/a"} &middot; <b>Develop:</b> ${scores.develop ?? "n/a"} &middot; <b>Automate:</b> ${scores.automate ?? "n/a"} &middot; <b>Market:</b> ${scores.market ?? "n/a"}</p>
+        <p><b>Research:</b> ${scores.research ?? "n/a"} &middot; <b>Design:</b> ${scores.design ?? "n/a"} &middot; <b>Develop:</b> ${scores.develop ?? "n/a"} &middot; <b>Automate:</b> ${scores.automate ?? "n/a"} &middot; <b>Market:</b> ${scores.market ?? "n/a"}</p>
       `,
     });
   }
 
-  return json({ ok: true, scores }, 200, env);
+  return json({ ok: true }, 200, env);
 }
 
 async function handleNewsletter(request, env) {

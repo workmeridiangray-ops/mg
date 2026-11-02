@@ -40,19 +40,22 @@ Settings → Triggers, add a custom route like `api.meridiangray.in/*` (requires
 ## Endpoints
 
 - `POST /api/contact` — project brief / contact form. Required: `name`, `email`, `main_problem`.
-- `POST /api/health-check` — System Finder submission. Required: `sector`, `business_type`.
-  Optional `answers` object (see scoring note below) returns computed discipline scores.
+- `POST /api/health-check` — System Finder submission, fired automatically once a
+  visitor reaches their diagnosis. Required: `sector`, `business_type`. Also accepts
+  `custom_label` (when they typed their own business), `info` (the full business-details
+  form: name, email, phone, cc, biz, role, web, year, city, region, branches, team,
+  turnover), `answers` (every question id → chosen option index/indices, raw), and
+  `scores` (the frontend's own computed `{ overall, research, design, develop, automate,
+  market }`, each 0-100 — the frontend owns the scoring logic per sector, the backend
+  just stores what it's given).
 - `POST /api/newsletter` — newsletter signup. Required: `email`.
 - `GET /api/health` — returns `{ok:true}` if the worker is live.
 
-## Health-check scoring
+## Health-check data
 
-The System Finder quiz isn't built yet on the frontend (that's a separate piece
-of work — the actual question set per sector). The backend is ready for it:
-send `answers` as `{ strategy: [0-5,...], design: [...], develop: [...], automate: [...], market: [...] }`
-(each array is the 0-5 ratings for that discipline's questions), and the worker
-returns `{ ok: true, scores: { overall, strategy, design, develop, automate, market } }`
-(each 0-100), matching the "Score by discipline" UI already designed on `where-you-stand.html`.
+Every submission is stored in full: the flattened business-details columns (for
+easy browsing in the D1 dashboard), plus `answers_json` and `info_json` holding the
+complete raw objects, so nothing is lost even as the question set evolves.
 
 ## Viewing submissions
 
