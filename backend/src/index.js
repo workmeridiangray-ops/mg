@@ -119,6 +119,7 @@ async function handleHealthCheck(request, env) {
     business_type = "",
     custom_label = "",
     answers = {},
+    answers_text = "",
     scores = {},
     info = {},
   } = body;
@@ -147,9 +148,9 @@ async function handleHealthCheck(request, env) {
     `INSERT INTO health_check_submissions
       (sector, business_type, custom_label, business_name, name, role, email, phone, cc,
        website, year_established, city, region, branches, team_size, turnover,
-       answers_json, info_json,
+       answers_json, answers_text, info_json,
        score_overall, score_research, score_design, score_develop, score_automate, score_market)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   )
     .bind(
       sector,
@@ -169,6 +170,7 @@ async function handleHealthCheck(request, env) {
       team_size,
       turnover,
       JSON.stringify(answers),
+      answers_text,
       JSON.stringify(info),
       scores.overall ?? null,
       scores.research ?? null,
@@ -179,23 +181,29 @@ async function handleHealthCheck(request, env) {
     )
     .run();
 
-  if (isEmail(email)) {
-    await sendBrevoEmail(env, {
-      subject: `New Health Check — ${business_name || sector}`,
-      replyTo: email,
-      htmlContent: `
-        <h2>New Business Health Check submitted</h2>
-        <p><b>Name:</b> ${name} ${role ? `(${role})` : ""}</p>
-        <p><b>Business:</b> ${business_name}</p>
-        <p><b>Sector:</b> ${sector} &middot; <b>Type:</b> ${custom_label || business_type}</p>
-        <p><b>Email:</b> ${email} &middot; <b>Phone:</b> ${cc} ${phone}</p>
-        <p><b>Website:</b> ${website || "—"} &middot; <b>City:</b> ${city || "—"} &middot; <b>Established:</b> ${year_established || "—"}</p>
-        <p><b>Operates:</b> ${region || "—"} &middot; <b>Offices:</b> ${branches || "—"} &middot; <b>Team:</b> ${team_size || "—"} &middot; <b>Turnover:</b> ${turnover || "—"}</p>
-        <p><b>Overall score:</b> ${scores.overall ?? "n/a"}/100</p>
-        <p><b>Research:</b> ${scores.research ?? "n/a"} &middot; <b>Design:</b> ${scores.design ?? "n/a"} &middot; <b>Develop:</b> ${scores.develop ?? "n/a"} &middot; <b>Automate:</b> ${scores.automate ?? "n/a"} &middot; <b>Market:</b> ${scores.market ?? "n/a"}</p>
-      `,
-    });
-  }
+  // Internal-only notification to the Meridian Gray team — never to the visitor.
+  // (replyTo is set to the visitor's email, purely so hitting "reply" in the inbox
+  // goes straight to them; the email itself only ever lands in NOTIFY_EMAIL.)
+  const escapeHtml = (s) =>
+    String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  await sendBrevoEmail(env, {
+    subject: `New Health Check — ${business_name || sector}`,
+    replyTo: isEmail(email) ? email : undefined,
+    htmlContent: `
+      <h2>New Business Health Check submitted</h2>
+      <p><b>Name:</b> ${name} ${role ? `(${role})` : ""}</p>
+      <p><b>Business:</b> ${business_name}</p>
+      <p><b>Sector:</b> ${sector} &middot; <b>Type:</b> ${custom_label || business_type}</p>
+      <p><b>Email:</b> ${email} &middot; <b>Phone:</b> ${cc} ${phone}</p>
+      <p><b>Website:</b> ${website || "—"} &middot; <b>City:</b> ${city || "—"} &middot; <b>Established:</b> ${year_established || "—"}</p>
+      <p><b>Operates:</b> ${region || "—"} &middot; <b>Offices:</b> ${branches || "—"} &middot; <b>Team:</b> ${team_size || "—"} &middot; <b>Turnover:</b> ${turnover || "—"}</p>
+      <p><b>Overall score:</b> ${scores.overall ?? "n/a"}/100</p>
+      <p><b>Research:</b> ${scores.research ?? "n/a"} &middot; <b>Design:</b> ${scores.design ?? "n/a"} &middot; <b>Develop:</b> ${scores.develop ?? "n/a"} &middot; <b>Automate:</b> ${scores.automate ?? "n/a"} &middot; <b>Market:</b> ${scores.market ?? "n/a"}</p>
+      <h3>Full Health Check — every question &amp; answer</h3>
+      <pre style="white-space:pre-wrap;font:13px/1.5 monospace;background:#F5F6F8;padding:16px;border-radius:8px">${escapeHtml(answers_text || "(not provided)")}</pre>
+    `,
+  });
 
   return json({ ok: true }, 200, env);
 }
