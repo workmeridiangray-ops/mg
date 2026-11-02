@@ -10,9 +10,11 @@ database_id = "99583afb-2906-4a64-a1cd-863813244d71"
 
 [vars]
 NOTIFY_EMAIL = "info@meridiangray.in"
-# Must be a sender verified in Brevo (Senders & IPs). "no-reply@meridiangray.in" is
-# NOT verified yet, which was silently failing every send — see backend/README.md.
-SENDER_EMAIL = "work.meridiangray@gmail.com"
+# Must be a sender verified in this Brevo account (Senders & IPs). Confirmed via
+# Brevo's own send log that "no-reply@meridiangray.in" was rejected on every single
+# attempt since launch ("sender ... is not valid"); only info@meridiangray.in is
+# verified on this account. Switch to a no-reply@ address once that's verified too.
+SENDER_EMAIL = "info@meridiangray.in"
 ALLOWED_ORIGIN = "https://www.meridiangray.in"
 
 # Set the real secret after deploy with:
