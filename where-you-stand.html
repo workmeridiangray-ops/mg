@@ -6051,6 +6051,20 @@ h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;spa
 h+='&lt;div class=&quot;sol-cta&quot;&gt;&lt;div&gt;&lt;span class=&quot;pm-eb&quot;&gt;Full audit report&lt;/span&gt;&lt;h3&gt;'+(C.high+C.med)+' risk findings are still open.&lt;/h3&gt;&lt;p&gt;On a 30-minute strategy call we walk through every finding with evidence, the root causes behind them and a phased plan to close them.&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;pm-btn red&quot; data-go=&quot;5&quot;&gt;Book my strategy call &lt;i aria-hidden=&quot;true&quot;&gt;→&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;';
 return h;}
 
+// Internal preview hook: the parent page (where-you-stand.html) posts this
+// message after ?preview=report is in its URL, so the diagnosis can be
+// reviewed with sample data without manually clicking through the quiz.
+// A srcdoc iframe's own location.search is always empty regardless of the
+// parent's URL, so postMessage — not a query-string check in here — is the
+// reliable way to trigger this from outside. No effect on a normal visit.
+window.addEventListener('message',function(e){
+  if(!e||e.data!=='mg-preview-report')return;
+  S.info=S.info||{};S.info.biz=S.info.biz||'Sample Business';
+  S.ind=S.ind||IND[0].id;S.type=S.type||secById(S.ind).types[0].id;
+  S.step=4;render();
+  try{window.scrollTo({top:0});}catch(err){}
+});
+
 render();
 })();
 &lt;/script&gt;
@@ -7014,9 +7028,10 @@ const tryPick=()=>{try{const d=fr.contentDocument;const b=d&&(d.querySelector('[
 fr.addEventListener('load',()=>setTimeout(tryPick,200));setTimeout(tryPick,600)})();
 </script><script id="report-preview">
 (()=>{if(!/[?&]preview=report\b/.test(location.search))return;const fr=document.getElementById('wsFinder');if(!fr)return;
-const steps=['#pm2-go','[data-go="3"]','[data-go="4"]'];let si=0,n=0;
-const tryStep=()=>{try{const d=fr.contentDocument;const b=d&&d.querySelector(steps[si]);if(b&&!b.disabled){b.click();si++;n=0;if(si>=steps.length){const t=document.getElementById('ws-finder');t&&t.scrollIntoView({block:'start'});return}setTimeout(tryStep,500);return}}catch(e){return}if(++n<60)setTimeout(tryStep,150)};
-fr.addEventListener('load',()=>setTimeout(tryStep,300));setTimeout(tryStep,800)})();
+const ping=()=>{try{fr.contentWindow.postMessage('mg-preview-report','*');}catch(e){}};
+fr.addEventListener('load',()=>{ping();setTimeout(ping,400);setTimeout(ping,1200);});
+setTimeout(ping,400);setTimeout(ping,1200);setTimeout(ping,2500);
+setTimeout(()=>{const t=document.getElementById('ws-finder');t&&t.scrollIntoView({block:'start'});},1600);})();
 </script>
 <script id="hero-snap">
 (()=>{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
