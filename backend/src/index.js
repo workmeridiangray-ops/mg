@@ -95,9 +95,12 @@ function rateLimitedResponse(env) {
 // ---------------- Health Check report locking ----------------
 // Each Health Check submission gets a report_token, returned to the
 // frontend so it can be kept (localStorage, and emailed back as a link)
-// and later checked against this endpoint — the full report only renders
-// once a visitor with that token has also submitted a call booking (by
-// token if the frontend sent one along, or by matching email either way).
+// and later checked against this endpoint. Booking a call does NOT unlock
+// the report by itself — the report only unlocks once the booked call has
+// actually happened: a scheduled job (see unlockDueReports(), run daily)
+// finds confirmed bookings whose call date was 5+ days ago, unlocks the
+// matching report, and emails the visitor the link. Nothing here infers
+// "unlocked" just from a booking existing.
 let reportColumnsReady = false;
 
 async function ensureReportColumns(env) {
@@ -119,49 +122,93 @@ async function ensureReportColumns(env) {
   reportColumnsReady = true;
 }
 
+let callBookingReportColumnsReady = false;
+
+async function ensureCallBookingReportColumns(env) {
+  if (callBookingReportColumnsReady) return;
+  for (const stmt of [
+    `ALTER TABLE call_bookings ADD COLUMN report_token TEXT`,
+    `ALTER TABLE call_bookings ADD COLUMN unlock_email_sent INTEGER DEFAULT 0`,
+  ]) {
+    try {
+      await env.DB.prepare(stmt).run();
+    } catch (e) {
+      if (!/duplicate column/i.test(String(e && e.message))) {
+        console.log("ensureCallBookingReportColumns:", e && e.message);
+      }
+    }
+  }
+  callBookingReportColumnsReady = true;
+}
+
 async function handleReportStatus(request, env) {
   const url = new URL(request.url);
   const token = url.searchParams.get("token") || "";
   if (!token) return json({ error: "token is required" }, 400, env);
 
   await ensureReportColumns(env);
-  const row = await env.DB.prepare(`SELECT email, report_unlocked FROM health_check_submissions WHERE report_token = ?`)
+  const row = await env.DB.prepare(`SELECT report_unlocked FROM health_check_submissions WHERE report_token = ?`)
     .bind(token)
     .first();
   if (!row) return json({ error: "not_found" }, 404, env);
 
-  if (row.report_unlocked) return json({ ok: true, unlocked: true }, 200, env);
-
-  // Not flagged yet on this row — check whether a call has been booked
-  // under the same email since, and backfill the flag if so.
-  if (row.email) {
-    const booking = await env.DB.prepare(`SELECT id FROM call_bookings WHERE email = ? COLLATE NOCASE LIMIT 1`)
-      .bind(row.email)
-      .first();
-    if (booking) {
-      await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE report_token = ?`).bind(token).run();
-      return json({ ok: true, unlocked: true }, 200, env);
-    }
-  }
-  return json({ ok: true, unlocked: false }, 200, env);
+  return json({ ok: true, unlocked: !!row.report_unlocked }, 200, env);
 }
 
-// Best-effort: called after a booking is created, unlocks any Health Check
-// report(s) tied to the same email (and/or an explicit report_token the
-// frontend sent along). Never throws — a failure here must not affect the
-// booking itself.
-async function unlockReportsForBooking(env, { email, reportToken }) {
-  try {
-    await ensureReportColumns(env);
-    if (reportToken) {
-      await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE report_token = ?`).bind(reportToken).run();
+// Run on a schedule (see the Worker's `scheduled` export / cron trigger in
+// wrangler.toml), not per-request: finds confirmed bookings whose call date
+// was at least 5 days ago and that haven't had their unlock email sent yet,
+// unlocks the matching Health Check report (by the report_token carried on
+// the booking row, falling back to matching email), and emails the visitor
+// the link. Marks each booking done so it's never processed twice.
+async function unlockDueReports(env) {
+  await ensureReportColumns(env);
+  await ensureCallBookingReportColumns(env);
+
+  const due = await env.DB.prepare(
+    `SELECT * FROM call_bookings
+     WHERE status = 'confirmed'
+       AND unlock_email_sent = 0
+       AND call_date <= date('now', '-5 days')`
+  ).all();
+
+  for (const row of due?.results || []) {
+    try {
+      let reportToken = row.report_token;
+      if (reportToken) {
+        await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE report_token = ?`).bind(reportToken).run();
+      } else if (row.email) {
+        await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE email = ? COLLATE NOCASE`).bind(row.email).run();
+        const hc = await env.DB.prepare(`SELECT report_token FROM health_check_submissions WHERE email = ? COLLATE NOCASE ORDER BY id DESC LIMIT 1`)
+          .bind(row.email)
+          .first();
+        reportToken = hc?.report_token || null;
+      }
+
+      if (isEmail(row.email)) {
+        await sendBrevoEmail(env, {
+          to: row.email,
+          subject: `Your full report is unlocked — ${row.business_name || row.name}`,
+          preheader: `Your Business Health Check report is ready to view in full.`,
+          htmlContent: `
+            <h2 style="margin:0 0 14px;font-size:19px;">Your full report is unlocked, ${String(row.name || "").split(" ")[0] || "there"}.</h2>
+            <p style="margin:0 0 14px;">Thanks for the call — here's the complete report with every finding, the full diagnosis, and the recommended plan.</p>
+            ${
+              reportToken
+                ? `<div style="margin-top:20px;">${emailButton("View your full report", `https://www.meridiangray.in/where-you-stand.html?rtoken=${reportToken}`)}</div>`
+                : ""
+            }
+          `,
+        });
+      }
+
+      await env.DB.prepare(`UPDATE call_bookings SET unlock_email_sent = 1 WHERE id = ?`).bind(row.id).run();
+    } catch (e) {
+      console.log("unlockDueReports: failed for booking", row.id, e && e.message);
     }
-    if (email) {
-      await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE email = ? COLLATE NOCASE`).bind(email).run();
-    }
-  } catch (e) {
-    console.log("unlockReportsForBooking failed:", e && e.message);
   }
+
+  return due?.results?.length || 0;
 }
 
 // ---------------- Branded email shell ----------------
@@ -512,9 +559,16 @@ async function handleBookCall(request, env) {
     .bind(name, email, phone, cc, business_name, sector, business_type, date, time, mode, notes, score_overall, "pending", actionToken)
     .run();
 
-  // Unlock any Health Check report tied to this email (and/or the explicit
-  // token the frontend sent along) — booking a call is what unlocks it.
-  await unlockReportsForBooking(env, { email, reportToken: report_token });
+  // Carry the Health Check report_token along on the booking row (best
+  // effort) so the scheduled unlock job can find exactly which report to
+  // unlock once the call has actually happened — see unlockDueReports().
+  if (report_token) {
+    await ensureCallBookingReportColumns(env);
+    await env.DB.prepare(`UPDATE call_bookings SET report_token = ? WHERE action_token = ?`)
+      .bind(report_token, actionToken)
+      .run()
+      .catch(() => {});
+  }
 
   const modeLabel = mode === "phone" ? "Phone call — we call you" : "Video call — Google Meet or Zoom";
   const niceDate = formatCallDate(date);
@@ -574,10 +628,10 @@ async function handleBookCall(request, env) {
       </div>
       ${
         report_token
-          ? `<div style="margin-top:14px;">${emailButton("View your full report", `https://www.meridiangray.in/where-you-stand.html?rtoken=${report_token}`, { variant: "outline" })}</div>`
+          ? `<p style="margin-top:18px;font-size:13px;color:${BRAND.faint};">Your full report unlocks a few days after the call — we'll email you the link then.</p>`
           : ""
       }
-      <p style="margin-top:18px;font-size:13px;color:${BRAND.faint};">Need a different time? <a href="${rescheduleUrl}" style="color:${BRAND.blue};">Reschedule here</a>.</p>
+      <p style="margin-top:12px;font-size:13px;color:${BRAND.faint};">Need a different time? <a href="${rescheduleUrl}" style="color:${BRAND.blue};">Reschedule here</a>.</p>
     `,
   });
 
@@ -1491,5 +1545,15 @@ export default {
     }
 
     return json({ error: "Not found" }, 404, env);
+  },
+
+  // Fired daily by the cron trigger in wrangler.toml — unlocks any Health
+  // Check reports whose call happened 5+ days ago and emails the visitor.
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(
+      unlockDueReports(env)
+        .then((n) => console.log(`unlockDueReports: processed ${n} booking(s)`))
+        .catch((e) => console.log("unlockDueReports failed:", e && e.message))
+    );
   },
 };

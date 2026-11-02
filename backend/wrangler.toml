@@ -8,6 +8,12 @@ binding = "DB"
 database_name = "meridiangray-db"
 database_id = "99583afb-2906-4a64-a1cd-863813244d71"
 
+[triggers]
+# Daily — checks for confirmed bookings whose call happened 5+ days ago and
+# unlocks/emails the full Health Check report for each. See unlockDueReports()
+# and the `scheduled` export in src/index.js.
+crons = ["0 3 * * *"]
+
 [vars]
 NOTIFY_EMAIL = "info@meridiangray.in"
 # Must be a sender verified in this Brevo account (Senders & IPs). Confirmed via
