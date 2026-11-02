@@ -5580,7 +5580,7 @@ function stepBook(){S.book=S.book||{};if(S.book.mode==='office')S.book.mode='vid
     var cal=calLinks(B,i),md=MODES.filter(function(m){return m[0]===B.mode;})[0]||MODES[0];
     h+='&lt;div class=&quot;bk-done&quot;&gt;&lt;span class=&quot;pm-eb&quot;&gt;/ Your slot&lt;/span&gt;&lt;h3&gt;'+(i.name?'Thank you, '+esc(i.name.split(' ')[0])+'.':'Thank you.')+'&lt;/h3&gt;&lt;p&gt;&lt;b&gt;'+dlabel(B.date)+' at '+B.time+' IST&lt;/b&gt;, 30 minutes, by &lt;b&gt;'+md[1].toLowerCase()+'&lt;/b&gt;. '+(B.custom?'This is your suggested time, so we’ll confirm it works for our team. ':'')+'Add it to your calendar so it’s held.&lt;/p&gt;'
      +'&lt;div class=&quot;cal-btns&quot;&gt;&lt;a class=&quot;cal-b&quot; href=&quot;'+cal.google+'&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;&lt;b&gt;Google Calendar&lt;/b&gt;&lt;small&gt;Opens in a new tab&lt;/small&gt;&lt;/a&gt;&lt;a class=&quot;cal-b&quot; href=&quot;'+cal.outlook+'&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;&lt;b&gt;Outlook&lt;/b&gt;&lt;small&gt;Opens in a new tab&lt;/small&gt;&lt;/a&gt;&lt;/div&gt;'
-     +'&lt;div class=&quot;bk-note&quot;&gt;Preview only. Booking isn’t connected to our team’s calendar yet, so we haven’t been notified of this slot.&lt;/div&gt;&lt;div class=&quot;ac-actions&quot;&gt;&lt;button class=&quot;aud-link&quot; data-bk=&quot;edit&quot;&gt;Change time&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;';
+     +'&lt;div class=&quot;bk-note&quot;&gt;'+(S._bookFailed?'We couldn’t reach our booking system just now — please also email or WhatsApp us this time so it’s not missed.':'We’ve been notified and will confirm this slot by email shortly.')+'&lt;/div&gt;&lt;div class=&quot;ac-actions&quot;&gt;&lt;button class=&quot;aud-link&quot; data-bk=&quot;edit&quot;&gt;Change time&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;';
     return h;}
   h+='&lt;div class=&quot;bk-grid solo&quot;&gt;&lt;div class=&quot;bk-main&quot;&gt;';
   h+='&lt;div class=&quot;bk-sec&quot;&gt;&lt;div class=&quot;bk-h&quot;&gt;&lt;b&gt;1&lt;/b&gt; Choose a day&lt;/div&gt;&lt;div class=&quot;days&quot; role=&quot;radiogroup&quot; aria-label=&quot;Day&quot;&gt;'+days.map(function(d){var k=dkey(d),on=B.date===k;return '&lt;button class=&quot;day'+(on?' on':'')+'&quot; data-bkd=&quot;'+k+'&quot; aria-pressed=&quot;'+on+'&quot;&gt;&lt;small&gt;'+d.toLocaleDateString('en-IN',{weekday:'short'})+'&lt;/small&gt;&lt;b&gt;'+d.getDate()+'&lt;/b&gt;&lt;small&gt;'+d.toLocaleDateString('en-IN',{month:'short'})+'&lt;/small&gt;&lt;/button&gt;';}).join('')+'&lt;/div&gt;&lt;/div&gt;';
@@ -5602,7 +5602,7 @@ document.getElementById('app').addEventListener('click',function(e){if(S.step!==
   else if(t.dataset.bk==='edit'){S.book.done=false;}
   else if(t.dataset.bk==='confirm'){var i=S.info||{},err=[];
     if(err.length){var hn=document.getElementById('bk-hint');if(hn){hn.textContent='Please add '+(err.length&gt;1?err.slice(0,-1).join(', ')+' and '+err[err.length-1]:err[0])+' so we can confirm your call.';hn.className='hint warn';}return;}
-    S.book.mode=S.book.mode||'video';S.book.done=true;persist();render();window.scrollTo({top:0,behavior:'smooth'});return;}
+    S.book.mode=S.book.mode||'video';S.book.done=true;S._bookFailed=false;persist();render();window.scrollTo({top:0,behavior:'smooth'});submitBooking();return;}
   persist();render();window.scrollTo(0,y);},true);
 document.getElementById('app').addEventListener('change',function(e){var el=e.target;if(!el.dataset||!el.dataset.bkct||S.step!==5)return;var v=el.value;S.book=S.book||{};if(!/^\d{2}:\d{2}$/.test(v))return;var h=+v.slice(0,2),m=v.slice(3);if(h&lt;9||h&gt;20||(h===20&amp;&amp;m!=='00')){var hn=document.getElementById('bk-hint');if(hn){hn.textContent='Choose a time between 9:00 AM and 8:00 PM IST.';hn.className='hint warn';}return;}
   S.book.t24=v;S.book.time=((h%12)||12)+':'+m+' '+(h&lt;12?'AM':'PM');S.book.custom=true;S.book.copen=false;persist();var y=window.scrollY;render();window.scrollTo(0,y);});
@@ -5622,6 +5622,15 @@ function buildAnswersText(){
     if(sel.length)lines.push(q.t+'\n'+sel.join(', '));
   });
   return lines.join('\n\n');
+}
+var BOOKCALL_ENDPOINT='https://meridiangray-backend.work-meridiangray.workers.dev/api/book-call';
+function submitBooking(){
+  var B=S.book||{};
+  fetch(BOOKCALL_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    date:B.date,time:B.time,mode:B.mode||'video',notes:B.notes||'',
+    sector:(ind()||{}).id||'',business_type:(typ()||{}).id||'',
+    score_overall:overall(),info:S.info||{}
+  })}).then(function(r){S._bookFailed=!r.ok;persist();render();}).catch(function(){S._bookFailed=true;persist();render();});
 }
 function submitHealthCheck(){
   if(S._submitted)return;S._submitted=true;persist();
