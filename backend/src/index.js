@@ -32,6 +32,62 @@ function isEmail(s) {
   return typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
+// ---------------- Spam / abuse protection ----------------
+// Simple fixed-window IP rate limiting on the public POST endpoints, backed by
+// D1 (no external service needed). This only ever applies to form submissions
+// (POST) — it never touches page loads or crawling, so it can't restrict
+// Google, GPTBot, ClaudeBot, PerplexityBot or any other AI/search crawler from
+// reading the site (see robots.txt, which explicitly allows all of them).
+let rateLimitTableReady = false;
+
+async function ensureRateLimitTable(env) {
+  if (rateLimitTableReady) return;
+  await env.DB.prepare(
+    `CREATE TABLE IF NOT EXISTS rate_limits (
+      rl_key TEXT PRIMARY KEY,
+      window_start INTEGER NOT NULL,
+      count INTEGER NOT NULL
+    )`
+  ).run();
+  rateLimitTableReady = true;
+}
+
+function clientIp(request) {
+  return request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "unknown";
+}
+
+// Returns { limited: boolean }. Fails open (never blocks a real submission)
+// if D1 is unreachable for some reason — availability beats strictness here.
+async function checkRateLimit(env, request, bucket, { limit, windowSec }) {
+  try {
+    await ensureRateLimitTable(env);
+    const ip = clientIp(request);
+    const windowStart = Math.floor(Date.now() / 1000 / windowSec) * windowSec;
+    const key = `${bucket}:${ip}:${windowStart}`;
+
+    await env.DB.prepare(
+      `INSERT INTO rate_limits (rl_key, window_start, count) VALUES (?, ?, 1)
+       ON CONFLICT(rl_key) DO UPDATE SET count = count + 1`
+    )
+      .bind(key, windowStart)
+      .run();
+
+    const row = await env.DB.prepare(`SELECT count FROM rate_limits WHERE rl_key = ?`).bind(key).first();
+    return { limited: (row?.count || 0) > limit };
+  } catch (e) {
+    console.log("Rate limit check failed (failing open):", e && e.message);
+    return { limited: false };
+  }
+}
+
+function rateLimitedResponse(env) {
+  return json(
+    { error: "rate_limited", message: "Too many requests from this connection — please wait a few minutes and try again." },
+    429,
+    env
+  );
+}
+
 // ---------------- Branded email shell ----------------
 // Wraps every email body in the site's own visual identity (same accent blue,
 // ink/mute palette and Plus Jakarta Sans font stack as meridiangray.in) so
@@ -1124,18 +1180,22 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/api/contact") {
+      if ((await checkRateLimit(env, request, "contact", { limit: 5, windowSec: 600 })).limited) return rateLimitedResponse(env);
       return handleContact(request, env);
     }
 
     if (request.method === "POST" && url.pathname === "/api/health-check") {
+      if ((await checkRateLimit(env, request, "health-check", { limit: 6, windowSec: 600 })).limited) return rateLimitedResponse(env);
       return handleHealthCheck(request, env);
     }
 
     if (request.method === "POST" && url.pathname === "/api/newsletter") {
+      if ((await checkRateLimit(env, request, "newsletter", { limit: 5, windowSec: 600 })).limited) return rateLimitedResponse(env);
       return handleNewsletter(request, env);
     }
 
     if (request.method === "POST" && url.pathname === "/api/book-call") {
+      if ((await checkRateLimit(env, request, "book-call", { limit: 5, windowSec: 600 })).limited) return rateLimitedResponse(env);
       return handleBookCall(request, env);
     }
 
@@ -1152,6 +1212,7 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/api/reschedule") {
+      if ((await checkRateLimit(env, request, "reschedule", { limit: 8, windowSec: 600 })).limited) return rateLimitedResponse(env);
       return handleReschedule(request, env);
     }
 

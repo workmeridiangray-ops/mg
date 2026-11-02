@@ -4697,6 +4697,10 @@ i.b0,.au-bd.b0{background:#D13B3B}i.b1{background:#E08A1E}i.b2{background:#244BD
 .as-tx b{display:block;font-size:16px;font-weight:600}.as-tx small{font-size:12.5px;opacity:.7}
 .as-meter{grid-column:1/-1;height:4px;background:rgba(255,255,255,.15);border-radius:0;overflow:hidden;margin-top:8px}.as-meter i{display:block;height:100%;background:var(--red);transition:width .5s}
 @media print{body *{visibility:hidden!important}.rv,.rv *{visibility:visible!important}.rv{position:absolute;left:0;top:0;width:100%;margin:0}.rv-bar{display:none!important}.rv-pg{box-shadow:none;border:0;max-width:none;break-after:page}.rv-q li.on{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.au-actions{display:flex;justify-content:flex-end;margin:14px 0 0}
+.pm-btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--ink)}
+.pm-btn.ghost:hover{background:var(--ink);color:var(--on-ink)}
+.pm-btn.ghost:disabled{opacity:.5;cursor:wait}
 &lt;/style&gt;
 &lt;div class=&quot;wrap&quot; id=&quot;app&quot;&gt;&lt;/div&gt;
 &lt;script&gt;
@@ -6037,6 +6041,7 @@ var GP=['design','market','automate','automate','develop','market','research'],g
 var goals=gq?(S.ans.goals||[]).map(function(i){return {t:gq.o[i]?gq.o[i][0]:'',p:P[GP[i]]};}).filter(function(g){return g.t&amp;&amp;g.p;}):[];
 var bnd=function(v){return v&lt;40?'b0':v&lt;60?'b1':v&lt;80?'b2':'b3';};
 h+='&lt;div class=&quot;au-cover&quot;&gt;&lt;div&gt;&lt;span class=&quot;pm-eb&quot;&gt;Business Health Check Report&lt;/span&gt;&lt;h2&gt;'+biz+'&lt;/h2&gt;&lt;p&gt;'+label()+' · Prepared by Meridian Gray · '+dt+'&lt;/p&gt;&lt;/div&gt;&lt;div class=&quot;au-score '+bnd(ov)+'&quot;&gt;&lt;b class=&quot;countup&quot; data-to=&quot;'+ov+'&quot;&gt;'+ov+'&lt;/b&gt;&lt;span&gt;/100&lt;/span&gt;&lt;em&gt;'+matLabel(ov)+'&lt;/em&gt;&lt;/div&gt;&lt;/div&gt;';
+h+='&lt;div class=&quot;au-actions&quot;&gt;&lt;button type=&quot;button&quot; class=&quot;pm-btn ghost&quot; id=&quot;auPdfBtn&quot; data-dlpdf=&quot;1&quot;&gt;Download PDF report &lt;i aria-hidden=&quot;true&quot;&gt;↓&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;';
 h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;01&lt;/span&gt;Executive summary&lt;/h3&gt;&lt;div class=&quot;au-sum&quot;&gt;&lt;p&gt;'+biz+' scores &lt;b&gt;'+ov+'/100&lt;/b&gt;, placing it in the &lt;b&gt;'+matLabel(ov)+'&lt;/b&gt; band. The strongest discipline is &lt;b&gt;'+strong.p.name+'&lt;/b&gt; ('+strong.pct+'); the weakest is &lt;b&gt;'+weak.p.name+'&lt;/b&gt; ('+weak.pct+'). Across '+F.length+' practices reviewed we recorded &lt;b&gt;'+C.high+' high-risk&lt;/b&gt; and &lt;b&gt;'+C.med+' medium-risk&lt;/b&gt; finding'+(C.high+C.med===1?'':'s')+(C.unv?', and '+C.unv+' practice'+(C.unv&gt;1?'s':'')+' that could not be confirmed':'')+'.&lt;/p&gt;&lt;div class=&quot;au-kpi&quot;&gt;&lt;div class=&quot;high&quot;&gt;&lt;b&gt;'+C.high+'&lt;/b&gt;&lt;span&gt;High risk&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;med&quot;&gt;&lt;b&gt;'+C.med+'&lt;/b&gt;&lt;span&gt;Medium risk&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;unv&quot;&gt;&lt;b&gt;'+C.unv+'&lt;/b&gt;&lt;span&gt;Unverified&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;str&quot;&gt;&lt;b&gt;'+(C.low+C.str)+'&lt;/b&gt;&lt;span&gt;Working&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;';
 h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;02&lt;/span&gt;Scorecard by discipline&lt;/h3&gt;&lt;div class=&quot;au-card&quot;&gt;&lt;div class=&quot;au-sc&quot;&gt;'+M.map(function(m){var un=F.filter(function(f){return f.q.p===m.p.id&amp;&amp;f.sev==='unv';}).length;return '&lt;div class=&quot;au-r&quot;&gt;&lt;span class=&quot;au-n&quot;&gt;'+m.p.name+'&lt;small&gt;Weight '+m.w+'% · '+m.answered+' practices&lt;/small&gt;&lt;/span&gt;&lt;span class=&quot;au-t&quot;&gt;&lt;i class=&quot;'+bnd(m.pct)+'&quot; style=&quot;width:'+m.pct+'%&quot;&gt;&lt;/i&gt;&lt;em style=&quot;left:40%&quot;&gt;&lt;/em&gt;&lt;em style=&quot;left:60%&quot;&gt;&lt;/em&gt;&lt;em style=&quot;left:80%&quot;&gt;&lt;/em&gt;&lt;/span&gt;&lt;b&gt;'+m.pct+'&lt;/b&gt;&lt;span class=&quot;au-bd '+bnd(m.pct)+'&quot;&gt;'+matLabel(m.pct)+(un?' · '+un+' unverified':'')+'&lt;/span&gt;&lt;/div&gt;';}).join('')+'&lt;/div&gt;&lt;div class=&quot;au-ax&quot;&gt;&lt;span&gt;0&lt;/span&gt;&lt;span style=&quot;left:40%&quot;&gt;40 Developing&lt;/span&gt;&lt;span style=&quot;left:60%&quot;&gt;60 Established&lt;/span&gt;&lt;span style=&quot;left:80%&quot;&gt;80 Advanced&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;';
 var open=F.filter(function(f){return f.sev==='high'||f.sev==='med';});
@@ -6049,7 +6054,144 @@ if(rd)h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&
 var ph=[Ms.slice(0,2),Ms.slice(2,4),Ms.slice(4)];
 h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;07&lt;/span&gt;Recommended sequence&lt;/h3&gt;&lt;div class=&quot;au-ph&quot;&gt;'+['Fix the foundation','Connect and automate','Optimise and grow'].map(function(n,k){return ph[k].length?'&lt;div&gt;&lt;span&gt;Phase '+(k+1)+'&lt;/span&gt;&lt;b&gt;'+n+'&lt;/b&gt;&lt;p&gt;'+ph[k].map(function(m){return m.p.name;}).join(' · ')+'&lt;/p&gt;&lt;i class=&quot;au-lk&quot;&gt;&lt;/i&gt;&lt;i class=&quot;au-lk s&quot;&gt;&lt;/i&gt;&lt;/div&gt;':'';}).join('')+'&lt;/div&gt;&lt;p class=&quot;au-note&quot;&gt;The detailed actions, order and effort for each phase are part of the full report.&lt;/p&gt;&lt;/div&gt;';
 h+='&lt;div class=&quot;sol-cta&quot;&gt;&lt;div&gt;&lt;span class=&quot;pm-eb&quot;&gt;Full audit report&lt;/span&gt;&lt;h3&gt;'+(C.high+C.med)+' risk findings are still open.&lt;/h3&gt;&lt;p&gt;On a 30-minute strategy call we walk through every finding with evidence, the root causes behind them and a phased plan to close them.&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;pm-btn red&quot; data-go=&quot;5&quot;&gt;Book my strategy call &lt;i aria-hidden=&quot;true&quot;&gt;→&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;';
+AU_REPORT={biz:biz,ov:ov,dt:dt,label:label(),strong:strong,weak:weak,F:F,C:C,M:M,pat:pat,goals:goals,rd:rd,rn:rn,ph:ph};
 return h;}
+
+// ---------------- PDF export of the audit report ----------------
+// Lazy-loads jsPDF from CDN only when the visitor clicks the button, so it
+// never adds weight to the initial Health Check load. AU_REPORT is the exact
+// data the on-screen report was just built from (set at the end of
+// stepSolution(), above), so the PDF always matches what they're looking at.
+var AU_REPORT=null;
+function loadJsPDF(cb){
+  if(window.jspdf&amp;&amp;window.jspdf.jsPDF){cb();return;}
+  var s=document.createElement('script');
+  s.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s.onload=cb;
+  s.onerror=function(){var b=document.getElementById('auPdfBtn');if(b){b.disabled=false;b.textContent='Download PDF report';}alert('Could not load the PDF generator — check your connection and try again.');};
+  document.head.appendChild(s);
+}
+function pdfBand(pct){return pct&gt;=80?[21,128,61]:pct&gt;=60?[36,75,219]:pct&gt;=40?[217,119,6]:[209,59,59];}
+function pdfUnesc(s){return String(s).replace(/&amp;amp;/g,'&amp;').replace(/&amp;lt;/g,'&lt;').replace(/&amp;gt;/g,'&gt;').replace(/&amp;quot;/g,'&quot;').replace(/&amp;#39;/g,&quot;'&quot;);}
+function downloadAuditPdf(){
+  var btn=document.getElementById('auPdfBtn');
+  var r=AU_REPORT;
+  if(!r||r.ov===null)return;
+  if(btn){btn.disabled=true;btn.textContent='Preparing…';}
+  loadJsPDF(function(){
+    try{
+      var Ctor=(window.jspdf&amp;&amp;window.jspdf.jsPDF)||window.jsPDF;
+      var doc=new Ctor({unit:'pt',format:'a4'});
+      var W=doc.internal.pageSize.getWidth(),H0=doc.internal.pageSize.getHeight(),MG=48,y=0;
+      var ink=[17,17,17],blue=[36,75,219],mute=[91,96,107],faint=[138,143,156],line=[227,229,234];
+      function ensure(need){if(y+need&gt;H0-56){doc.addPage();y=60;}}
+      function header(){
+        doc.setFillColor(ink[0],ink[1],ink[2]);doc.rect(0,0,W,64,'F');
+        doc.setFillColor(blue[0],blue[1],blue[2]);doc.rect(MG,18,3,28,'F');
+        doc.setTextColor(255,255,255);doc.setFont('helvetica','bold');doc.setFontSize(16);
+        doc.text('MERIDIAN GRAY',MG+14,34);
+        doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(faint[0],faint[1],faint[2]);
+        doc.text('CONNECTED BUSINESS SYSTEMS',MG+14,46);
+        doc.setFontSize(9);
+        doc.text('Business Health Check Report',W-MG,34,{align:'right'});
+        doc.text(r.dt,W-MG,46,{align:'right'});
+      }
+      header();y=96;
+
+      doc.setTextColor(ink[0],ink[1],ink[2]);doc.setFont('helvetica','bold');doc.setFontSize(20);
+      doc.text(pdfUnesc(r.biz),MG,y);y+=18;
+      doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(mute[0],mute[1],mute[2]);
+      doc.text(pdfUnesc(r.label)+' · Prepared by Meridian Gray',MG,y);y+=24;
+
+      doc.setFont('helvetica','bold');doc.setFontSize(28);
+      var bc=pdfBand(r.ov);doc.setTextColor(bc[0],bc[1],bc[2]);
+      doc.text(String(r.ov)+'/100',MG,y+24);
+      doc.setFont('helvetica','normal');doc.setFontSize(11);doc.setTextColor(mute[0],mute[1],mute[2]);
+      doc.text(matLabel(r.ov),MG+120,y+21);
+      y+=46;
+      doc.setFillColor(230,232,237);doc.roundedRect(MG,y,W-2*MG,8,4,4,'F');
+      doc.setFillColor(bc[0],bc[1],bc[2]);doc.roundedRect(MG,y,Math.max(8,(W-2*MG)*r.ov/100),8,4,4,'F');
+      y+=32;
+
+      ensure(80);
+      doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(ink[0],ink[1],ink[2]);
+      doc.text('01 · Executive summary',MG,y);y+=18;
+      doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(mute[0],mute[1],mute[2]);
+      var summary=pdfUnesc(r.biz)+' scores '+r.ov+'/100, placing it in the '+matLabel(r.ov)+' band. The strongest discipline is '+r.strong.p.name+' ('+r.strong.pct+'); the weakest is '+r.weak.p.name+' ('+r.weak.pct+'). Across '+r.F.length+' practices reviewed, '+r.C.high+' were high-risk and '+r.C.med+' medium-risk'+(r.C.unv?', with '+r.C.unv+' unverified':'')+'.';
+      var sLines=doc.splitTextToSize(summary,W-2*MG);
+      doc.text(sLines,MG,y);y+=sLines.length*13+18;
+
+      ensure(40);
+      doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(ink[0],ink[1],ink[2]);
+      doc.text('02 · Scorecard by discipline',MG,y);y+=18;
+      r.M.forEach(function(m){
+        ensure(34);
+        doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(ink[0],ink[1],ink[2]);
+        doc.text(m.p.name+' (weight '+m.w+'%)',MG,y+8);
+        doc.setTextColor(mute[0],mute[1],mute[2]);
+        doc.text(m.pct+'/100 · '+matLabel(m.pct),W-MG,y+8,{align:'right'});
+        doc.setFillColor(230,232,237);doc.roundedRect(MG,y+14,W-2*MG,6,3,3,'F');
+        var pcol=pdfBand(m.pct);doc.setFillColor(pcol[0],pcol[1],pcol[2]);
+        doc.roundedRect(MG,y+14,Math.max(6,(W-2*MG)*m.pct/100),6,3,3,'F');
+        y+=32;
+      });
+      y+=10;
+
+      ensure(60);
+      doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(ink[0],ink[1],ink[2]);
+      doc.text('03 · Findings register',MG,y);y+=18;
+      doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(mute[0],mute[1],mute[2]);
+      var SEVLBL={high:'High risk',med:'Medium risk',unv:'Unverified',low:'Improve',str:'Strength'};
+      r.F.slice(0,12).forEach(function(f,k){
+        ensure(16);
+        var txt='F'+String(k+1).padStart(2,'0')+'  '+f.pn+'  —  '+SEVLBL[f.sev]+(k&lt;2&amp;&amp;f.q&amp;&amp;f.o?': '+f.q.t:'');
+        var fl=doc.splitTextToSize(txt,W-2*MG);
+        doc.text(fl,MG,y);y+=fl.length*12+3;
+      });
+      if(r.F.length&gt;12){ensure(14);doc.text('+ '+(r.F.length-12)+' more findings — full detail covered on the strategy call.',MG,y);y+=16;}
+      y+=10;
+
+      if(r.pat&amp;&amp;r.pat.length){
+        ensure(50);
+        doc.setFont('helvetica','bold');doc.setFontSize(13);doc.setTextColor(ink[0],ink[1],ink[2]);
+        doc.text('04 · Observations',MG,y);y+=18;
+        doc.setFont('helvetica','normal');doc.setFontSize(10);
+        r.pat.forEach(function(p){
+          ensure(34);
+          doc.setFont('helvetica','bold');doc.setTextColor(ink[0],ink[1],ink[2]);
+          doc.text(p[0],MG,y);y+=13;
+          doc.setFont('helvetica','normal');doc.setTextColor(mute[0],mute[1],mute[2]);
+          var pl=doc.splitTextToSize(p[1],W-2*MG);doc.text(pl,MG,y);y+=pl.length*12+10;
+        });
+      }
+
+      ensure(70);
+      y+=6;doc.setDrawColor(line[0],line[1],line[2]);doc.line(MG,y,W-MG,y);y+=24;
+      doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(ink[0],ink[1],ink[2]);
+      doc.text('Next step',MG,y);y+=16;
+      doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(mute[0],mute[1],mute[2]);
+      var nextLines=doc.splitTextToSize('This report shows what was found. On a 30-minute strategy call we walk through every finding with evidence, the root causes, and a phased plan to close them — no obligation.',W-2*MG);
+      doc.text(nextLines,MG,y);y+=nextLines.length*14+8;
+      doc.setTextColor(blue[0],blue[1],blue[2]);doc.setFont('helvetica','bold');
+      doc.textWithLink('Book your strategy call →',MG,y,{url:'https://www.meridiangray.in/where-you-stand.html'});
+
+      var pages=doc.internal.getNumberOfPages();
+      for(var p=1;p&lt;=pages;p++){
+        doc.setPage(p);
+        var H=doc.internal.pageSize.getHeight();
+        doc.setDrawColor(line[0],line[1],line[2]);doc.line(MG,H-40,W-MG,H-40);
+        doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(faint[0],faint[1],faint[2]);
+        doc.text('Meridian Gray · meridiangray.in · info@meridiangray.in',MG,H-26);
+        doc.text('Page '+p+' of '+pages,W-MG,H-26,{align:'right'});
+      }
+
+      var fname=pdfUnesc(r.biz).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'')||'business';
+      doc.save(fname+'-health-check-report.pdf');
+    }catch(err){alert('Could not generate the PDF — please try again.');}
+    if(btn){btn.disabled=false;btn.textContent='Download PDF report';}
+  });
+}
+document.addEventListener('click',function(e){var t=e.target.closest('[data-dlpdf]');if(!t)return;downloadAuditPdf();});
 
 render();
 })();
@@ -6066,7 +6208,7 @@ render();
 &lt;/script&gt;
 
 &lt;/body&gt;&lt;/html&gt;
-" title="Meridian Gray System Finder: 5-minute business Health Check" loading="eager"></iframe>
+&quot; title=&quot;Meridian Gray System Finder: 5-minute business Health Check&quot; loading=&quot;eager"></iframe>
   </div>
   <p class="ws-alt">Having trouble with the check here? <a href="where-you-stand.html#ws-finder">Open it in a new tab</a>.</p>
   
