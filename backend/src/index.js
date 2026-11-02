@@ -292,6 +292,7 @@ async function handleBookCall(request, env) {
   const baseUrl = "https://meridiangray-backend.work-meridiangray.workers.dev";
   const acceptUrl = `${baseUrl}/api/booking-action?token=${actionToken}&action=accept`;
   const declineUrl = `${baseUrl}/api/booking-action?token=${actionToken}&action=decline`;
+  const rescheduleUrl = `${baseUrl}/reschedule?token=${actionToken}`;
 
   // Internal notification — team reviews and accepts/declines, nothing is
   // confirmed to the client until one of these is clicked.
@@ -325,6 +326,7 @@ async function handleBookCall(request, env) {
       <p><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
       <p>We're holding this slot and will confirm shortly by email. If it doesn't end up working on our end, we'll reach out to find another time.</p>
       ${notes ? `<p>You mentioned you'd like to look at: <i>${notes}</i>. We'll come prepared.</p>` : ""}
+      <p>Need a different time? <a href="${rescheduleUrl}">Reschedule here</a>.</p>
       <p>— Meridian Gray</p>
     `,
   });
@@ -406,6 +408,7 @@ async function handleBookingAction(request, env) {
 
   const niceDate = formatCallDate(row.call_date);
   const newStatus = action === "accept" ? "confirmed" : "declined";
+  const rescheduleUrl = `https://meridiangray-backend.work-meridiangray.workers.dev/reschedule?token=${token}`;
   await env.DB.prepare(`UPDATE call_bookings SET status = ? WHERE action_token = ?`).bind(newStatus, token).run();
 
   if (action === "accept") {
@@ -417,6 +420,7 @@ async function handleBookingAction(request, env) {
         <h2>You're confirmed, ${String(row.name).split(" ")[0]}.</h2>
         <p><b>${niceDate} at ${row.call_time} IST</b>, 30 minutes${row.meet_link ? `, via <a href="${row.meet_link}">${row.meet_link}</a>` : ""}.</p>
         <p>See you then — reply to this email any time before the call if anything changes.</p>
+        <p>Need a different time instead? <a href="${rescheduleUrl}">Reschedule here</a>.</p>
         <p>— Meridian Gray</p>
       `,
     });
@@ -428,12 +432,231 @@ async function handleBookingAction(request, env) {
       subject: `About your call request — ${niceDate} at ${row.call_time} IST`,
       htmlContent: `
         <h2>That time doesn't work for us, ${String(row.name).split(" ")[0]}.</h2>
-        <p>Sorry about that — could you pick another slot? <a href="https://www.meridiangray.in/where-you-stand.html">Choose a new time</a>.</p>
+        <p>Sorry about that — could you pick another slot? <a href="https://www.meridiangray.in/where-you-stand.html">Choose a new time</a>, or <a href="${rescheduleUrl}">reschedule this request directly</a>.</p>
         <p>— Meridian Gray</p>
       `,
     });
     return oauthHtmlPage("Declined", `<p>Declined ${row.name}'s request for ${niceDate} at ${row.call_time} IST. They've been emailed and the slot is free again.</p>`);
   }
+}
+
+function rescheduleBaseStyles() {
+  return `body{font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:480px;margin:60px auto;padding:0 24px;color:#111}
+    h1{font-size:22px;margin-bottom:4px}
+    .sub{color:#666;font-size:14px;margin-bottom:24px}
+    label{display:block;font-weight:bold;margin-top:18px;margin-bottom:6px;font-size:14px}
+    input[type=date]{padding:8px;font-size:15px;border:1px solid #ccc;border-radius:6px;width:100%;box-sizing:border-box}
+    .slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+    .slot{padding:9px 14px;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:14px;background:#fff}
+    .slot.selected{background:#244BDB;color:#fff;border-color:#244BDB}
+    .slot.taken{opacity:0.35;cursor:not-allowed;text-decoration:line-through}
+    button#submitBtn{margin-top:24px;background:#244BDB;color:#fff;border:none;padding:11px 22px;border-radius:6px;font-size:15px;font-weight:bold;cursor:pointer}
+    button#submitBtn:disabled{opacity:0.5;cursor:not-allowed}
+    #msg{margin-top:16px;font-size:14px}
+    #msg.error{color:#b3261e}
+    #msg.ok{color:#1a7f3c}`;
+}
+
+async function handleReschedulePage(request, env) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token") || "";
+  if (!token) return oauthHtmlPage("Invalid link", `<p>This link is missing information and can't be processed.</p>`);
+
+  const row = await env.DB.prepare(`SELECT * FROM call_bookings WHERE action_token = ?`).bind(token).first();
+  if (!row) return oauthHtmlPage("Not found", `<p>This booking couldn't be found — it may have already been removed.</p>`);
+
+  if (!["pending", "confirmed", "declined"].includes(row.status)) {
+    return oauthHtmlPage(
+      "Can't reschedule",
+      `<p>This booking is marked <b>${row.status}</b> and can no longer be rescheduled from this link. <a href="https://www.meridiangray.in/where-you-stand.html">Book a new call instead</a>.</p>`
+    );
+  }
+
+  const niceDate = formatCallDate(row.call_date);
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Reschedule your call</title>
+  <style>${rescheduleBaseStyles()}</style></head>
+  <body>
+    <h1>Reschedule your call</h1>
+    <p class="sub">Currently booked for <b>${niceDate} at ${row.call_time} IST</b>. Pick a new date and time below.</p>
+    <label for="dateInput">New date</label>
+    <input type="date" id="dateInput" min="${new Date().toISOString().slice(0, 10)}" />
+    <label>Available times</label>
+    <div class="slots" id="slots"><span class="sub">Pick a date first</span></div>
+    <button id="submitBtn" disabled>Confirm new time</button>
+    <div id="msg"></div>
+    <script>
+      const token = ${JSON.stringify(token)};
+      const dateInput = document.getElementById('dateInput');
+      const slotsEl = document.getElementById('slots');
+      const submitBtn = document.getElementById('submitBtn');
+      const msgEl = document.getElementById('msg');
+      let selectedSlot = null;
+
+      dateInput.addEventListener('change', async () => {
+        selectedSlot = null;
+        submitBtn.disabled = true;
+        msgEl.textContent = '';
+        slotsEl.innerHTML = '<span class="sub">Loading…</span>';
+        try {
+          const resp = await fetch('/api/availability?date=' + dateInput.value);
+          const data = await resp.json();
+          const all = ${JSON.stringify(SLOTS)};
+          slotsEl.innerHTML = '';
+          all.forEach((slot) => {
+            const el = document.createElement('div');
+            el.className = 'slot' + (data.available.includes(slot) ? '' : ' taken');
+            el.textContent = slot;
+            if (data.available.includes(slot)) {
+              el.addEventListener('click', () => {
+                document.querySelectorAll('.slot').forEach((s) => s.classList.remove('selected'));
+                el.classList.add('selected');
+                selectedSlot = slot;
+                submitBtn.disabled = false;
+              });
+            }
+            slotsEl.appendChild(el);
+          });
+        } catch (e) {
+          slotsEl.innerHTML = '<span class="sub">Could not load availability — try again.</span>';
+        }
+      });
+
+      submitBtn.addEventListener('click', async () => {
+        if (!selectedSlot || !dateInput.value) return;
+        submitBtn.disabled = true;
+        msgEl.className = '';
+        msgEl.textContent = 'Saving…';
+        try {
+          const resp = await fetch('/api/reschedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token, date: dateInput.value, time: selectedSlot }),
+          });
+          const data = await resp.json();
+          if (resp.ok && data.ok) {
+            msgEl.className = 'ok';
+            msgEl.textContent = "Done — we've sent your new request for review and emailed you a confirmation once it's reviewed.";
+            dateInput.disabled = true;
+            document.querySelectorAll('.slot').forEach((s) => (s.style.pointerEvents = 'none'));
+          } else {
+            msgEl.className = 'error';
+            msgEl.textContent = data.message || 'That slot was just taken — pick another.';
+            submitBtn.disabled = false;
+          }
+        } catch (e) {
+          msgEl.className = 'error';
+          msgEl.textContent = 'Something went wrong — please try again.';
+          submitBtn.disabled = false;
+        }
+      });
+    </script>
+  </body></html>`;
+
+  return new Response(html, {
+    status: 200,
+    headers: { "Content-Type": "text/html;charset=utf-8" },
+  });
+}
+
+async function handleReschedule(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body) return json({ error: "Invalid JSON body" }, 400, env);
+  const { token = "", date = "", time = "" } = body;
+
+  if (!token || !date || !time) {
+    return json({ error: "token, date and time are required" }, 400, env);
+  }
+
+  const row = await env.DB.prepare(`SELECT * FROM call_bookings WHERE action_token = ?`).bind(token).first();
+  if (!row) return json({ error: "not_found", message: "Booking not found." }, 404, env);
+
+  if (!["pending", "confirmed", "declined"].includes(row.status)) {
+    return json({ error: "not_reschedulable", message: `This booking is already ${row.status}.` }, 409, env);
+  }
+
+  if (date === row.call_date && time === row.call_time) {
+    return json({ error: "same_slot", message: "That's already the current time — pick a different one." }, 400, env);
+  }
+
+  if (await isSlotTaken(env, date, time)) {
+    return json({ error: "slot_taken", message: "That slot was just taken — please pick another time." }, 409, env);
+  }
+
+  const niceDate = formatCallDate(date);
+  const modeLabel = row.mode === "phone" ? "Phone call — we call you" : "Video call — Google Meet or Zoom";
+  const baseUrl = "https://meridiangray-backend.work-meridiangray.workers.dev";
+  const acceptUrl = `${baseUrl}/api/booking-action?token=${token}&action=accept`;
+  const declineUrl = `${baseUrl}/api/booking-action?token=${token}&action=decline`;
+
+  // Move the existing calendar event's time and put it back to tentative/pending review.
+  if (row.calendar_event_id) {
+    const accessToken = await getGoogleAccessToken(env);
+    if (accessToken) {
+      const start = parseSlotToUtc(date, time);
+      const end = new Date(start.getTime() + CALL_DURATION_MIN * 60000);
+      await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${row.calendar_event_id}?sendUpdates=all`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "tentative",
+          summary: `[Pending] Meridian Gray strategy call — ${row.business_name || row.name}`,
+          start: { dateTime: start.toISOString(), timeZone: "Asia/Kolkata" },
+          end: { dateTime: end.toISOString(), timeZone: "Asia/Kolkata" },
+          description: [
+            `Business: ${row.business_name || "—"}`,
+            `Sector: ${row.sector || "—"} · Type: ${row.business_type || "—"}`,
+            row.score_overall !== null && row.score_overall !== undefined ? `Health Check score: ${row.score_overall}/100` : null,
+            row.notes ? `Wants to look at: ${row.notes}` : null,
+            `Accept: ${acceptUrl}`,
+            `Decline: ${declineUrl}`,
+          ]
+            .filter(Boolean)
+            .join("\n"),
+        }),
+      }).catch((e) => console.log("Calendar reschedule patch failed:", e && e.message));
+    }
+  }
+
+  await env.DB.prepare(
+    `UPDATE call_bookings SET call_date = ?, call_time = ?, status = 'pending' WHERE action_token = ?`
+  )
+    .bind(date, time, token)
+    .run();
+
+  // Re-send the internal notification so the team reviews the new time.
+  await sendBrevoEmail(env, {
+    subject: `Rescheduled call request — ${row.business_name || row.name}, ${niceDate} ${time} IST`,
+    replyTo: row.email,
+    htmlContent: `
+      <h2>Call request rescheduled by client</h2>
+      <p><b>Name:</b> ${row.name}</p>
+      <p><b>Business:</b> ${row.business_name || "—"}</p>
+      <p><b>Sector:</b> ${row.sector || "—"} &middot; <b>Type:</b> ${row.business_type || "—"}</p>
+      <p><b>Email:</b> ${row.email} &middot; <b>Phone:</b> ${row.cc || ""} ${row.phone || ""}</p>
+      <p><b>Previous time:</b> ${formatCallDate(row.call_date)} at ${row.call_time} IST</p>
+      <p><b>New requested time:</b> ${niceDate} at ${time} IST</p>
+      <p><b>How:</b> ${modeLabel}</p>
+      ${row.notes ? `<p><b>What they want to look at first:</b> ${row.notes}</p>` : ""}
+      <p style="margin-top:20px">
+        <a href="${acceptUrl}" style="background:#1a7f3c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;margin-right:10px">Accept</a>
+        <a href="${declineUrl}" style="background:#b3261e;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Decline</a>
+      </p>
+    `,
+  });
+
+  // Let the visitor know their new time is pending review, same as a fresh booking.
+  await sendBrevoEmail(env, {
+    to: row.email,
+    subject: `Your new time request — ${niceDate} at ${time} IST`,
+    htmlContent: `
+      <h2>Got your new time, ${String(row.name).split(" ")[0]}.</h2>
+      <p><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
+      <p>We're holding this slot and will confirm shortly by email.</p>
+      <p>— Meridian Gray</p>
+    `,
+  });
+
+  return json({ ok: true }, 200, env);
 }
 
 // ---------------- Google Calendar integration ----------------
@@ -658,6 +881,14 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/api/booking-action") {
       return handleBookingAction(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/reschedule") {
+      return handleReschedulePage(request, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/reschedule") {
+      return handleReschedule(request, env);
     }
 
     if (request.method === "GET" && url.pathname === "/oauth/start") {
