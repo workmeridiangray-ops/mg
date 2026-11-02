@@ -221,6 +221,89 @@ async function handleNewsletter(request, env) {
   return json({ ok: true }, 200, env);
 }
 
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+function formatCallDate(dateKey) {
+  // dateKey is "YYYY-MM-DD" (IST calendar date, as chosen on the site)
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateKey || "");
+  if (!m) return dateKey || "";
+  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return `${DAY_NAMES[d.getUTCDay()]}, ${+m[3]} ${MONTH_NAMES[d.getUTCMonth()]} ${m[1]}`;
+}
+
+async function handleBookCall(request, env) {
+  const body = await request.json().catch(() => null);
+  if (!body) return json({ error: "Invalid JSON body" }, 400, env);
+
+  const {
+    date = "",
+    time = "",
+    mode = "video",
+    notes = "",
+    sector = "",
+    business_type = "",
+    score_overall = null,
+    info = {},
+  } = body;
+
+  const { name = "", email = "", phone = "", cc = "", biz: business_name = "" } = info;
+
+  if (!date || !time) {
+    return json({ error: "date and time are required" }, 400, env);
+  }
+  if (!name || !isEmail(email)) {
+    return json({ error: "name and a valid email are required" }, 400, env);
+  }
+
+  await env.DB.prepare(
+    `INSERT INTO call_bookings
+      (name, email, phone, cc, business_name, sector, business_type, call_date, call_time, mode, notes, score_overall)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+  )
+    .bind(name, email, phone, cc, business_name, sector, business_type, date, time, mode, notes, score_overall)
+    .run();
+
+  const modeLabel = mode === "phone" ? "Phone call — we call you" : "Video call — Google Meet or Zoom";
+  const niceDate = formatCallDate(date);
+
+  // Internal notification — team needs to know a slot was taken and confirm it.
+  await sendBrevoEmail(env, {
+    subject: `New call booked — ${business_name || name}, ${niceDate} ${time} IST`,
+    replyTo: email,
+    htmlContent: `
+      <h2>New strategy call booked</h2>
+      <p><b>Name:</b> ${name}</p>
+      <p><b>Business:</b> ${business_name || "—"}</p>
+      <p><b>Sector:</b> ${sector || "—"} &middot; <b>Type:</b> ${business_type || "—"}</p>
+      <p><b>Email:</b> ${email} &middot; <b>Phone:</b> ${cc} ${phone}</p>
+      <p><b>When:</b> ${niceDate} at ${time} IST</p>
+      <p><b>How:</b> ${modeLabel}</p>
+      ${score_overall !== null ? `<p><b>Health Check score:</b> ${score_overall}/100</p>` : ""}
+      ${notes ? `<p><b>What they want to look at first:</b> ${notes}</p>` : ""}
+      <p>This slot has <b>not</b> been added to any calendar automatically — confirm it with the client and add it to the team calendar manually.</p>
+    `,
+  });
+
+  // Confirmation to the visitor — this is a transactional booking receipt, not a
+  // marketing/report copy, so it's sent regardless (they need to know it landed).
+  await sendBrevoEmail(env, {
+    to: email,
+    subject: `Your call with Meridian Gray — ${niceDate} at ${time} IST`,
+    htmlContent: `
+      <h2>You're booked in, ${name.split(" ")[0]}.</h2>
+      <p><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
+      <p>We'll confirm this slot shortly by email or WhatsApp. If the time doesn't end up working on our end, we'll reach out to find another.</p>
+      ${notes ? `<p>You mentioned you'd like to look at: <i>${notes}</i>. We'll come prepared.</p>` : ""}
+      <p>— Meridian Gray</p>
+    `,
+  });
+
+  return json({ ok: true }, 200, env);
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -243,6 +326,10 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/api/newsletter") {
       return handleNewsletter(request, env);
+    }
+
+    if (request.method === "POST" && url.pathname === "/api/book-call") {
+      return handleBookCall(request, env);
     }
 
     return json({ error: "Not found" }, 404, env);
