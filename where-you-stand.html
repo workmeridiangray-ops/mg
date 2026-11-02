@@ -5615,6 +5615,14 @@ try{var raw=localStorage.getItem('mg-finder-v18');if(raw){var p=JSON.parse(raw);
 if(S.ind&amp;&amp;!IND.some(function(i){return i.id===S.ind;})){S.ind=null;S.type=null;S.step=1;}
 function persist(){try{localStorage.setItem('mg-finder-v18',JSON.stringify(S));}catch(e){}}
 var HEALTHCHECK_ENDPOINT='https://meridiangray-backend.work-meridiangray.workers.dev/api/health-check';
+function buildAnswersText(){
+  var lines=[];
+  qsFor().forEach(function(q){
+    var sel=(S.ans[q.id]||[]).map(function(i){var o=optsOf(q)[i];return o?o[0]:'';}).filter(Boolean);
+    if(sel.length)lines.push(q.t+'\n'+sel.join(', '));
+  });
+  return lines.join('\n\n');
+}
 function submitHealthCheck(){
   if(S._submitted)return;S._submitted=true;persist();
   try{
@@ -5627,6 +5635,7 @@ function submitHealthCheck(){
       custom_label:(T&amp;&amp;T.id==='other')?(S.custom||''):'',
       info:S.info||{},
       answers:S.ans||{},
+      answers_text:buildAnswersText(),
       scores:scores
     })}).catch(function(){});
   }catch(e){}
