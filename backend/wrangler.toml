@@ -23,3 +23,5 @@ ALLOWED_ORIGIN = "https://www.meridiangray.in"
 # Redeploy trigger: 2026-11-01T22:38:33Z — secrets configured
 
 # Redeploy trigger: 2026-11-02T04:08:38Z — Google OAuth secrets added
+
+# Redeploy trigger: 2026-11-02T04:12:18Z — rechecking Google OAuth secrets
