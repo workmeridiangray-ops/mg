@@ -32,7 +32,72 @@ function isEmail(s) {
   return typeof s === "string" && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
 }
 
-async function sendBrevoEmail(env, { subject, htmlContent, to, replyTo }) {
+// ---------------- Branded email shell ----------------
+// Wraps every email body in the site's own visual identity (same accent blue,
+// ink/mute palette and Plus Jakarta Sans font stack as meridiangray.in) so
+// transactional mail reads as a real, designed piece of the brand rather than
+// a bare system notice — and matches what a recipient sees when they visit
+// the site, for the same reason that helps with spam perception: consistent
+// sender identity, real branding, a real postal address, and a plain-text
+// alternative.
+const BRAND = {
+  ink: "#111111",
+  blue: "#244BDB",
+  blueLight: "#9FB4FF",
+  mute: "#5B606B",
+  faint: "#8A8F9C",
+  bg: "#F5F6F8",
+  card: "#FFFFFF",
+  border: "#E3E5EA",
+  green: "#1a7f3c",
+  red: "#b3261e",
+  font: "'Plus Jakarta Sans',Helvetica,Arial,sans-serif",
+};
+
+function emailButton(label, href, { variant = "solid" } = {}) {
+  const solid = `background:${BRAND.blue};color:#ffffff;border:1px solid ${BRAND.blue};`;
+  const outline = `background:transparent;color:${BRAND.ink};border:1px solid ${BRAND.ink};`;
+  const danger = `background:#ffffff;color:${BRAND.red};border:1px solid ${BRAND.red};`;
+  const style = variant === "outline" ? outline : variant === "danger" ? danger : solid;
+  return `<a href="${href}" style="display:inline-block;${style}padding:13px 24px;font-family:${BRAND.font};font-size:14px;font-weight:700;text-decoration:none;letter-spacing:.01em;margin:4px 10px 4px 0;">${label}</a>`;
+}
+
+function emailShell(bodyHtml, { preheader = "" } = {}) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Meridian Gray</title>
+</head>
+<body style="margin:0;padding:0;background:${BRAND.bg};font-family:${BRAND.font};color:${BRAND.ink};">
+<div style="display:none;max-height:0;max-width:0;overflow:hidden;opacity:0;mso-hide:all;">${preheader}</div>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.bg};padding:32px 14px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${BRAND.card};border:1px solid ${BRAND.border};">
+<tr><td style="background:${BRAND.ink};padding:26px 32px;">
+  <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-left:3px solid ${BRAND.blue};padding-left:12px;">
+    <div style="font-family:${BRAND.font};font-size:19px;font-weight:700;letter-spacing:-.02em;color:#ffffff;line-height:1;">MERIDIAN <span style="color:${BRAND.blueLight};font-style:normal;">GRAY</span></div>
+    <div style="font-family:${BRAND.font};font-size:9px;letter-spacing:.32em;text-transform:uppercase;color:${BRAND.faint};margin-top:7px;">Connected Business Systems</div>
+  </td></tr></table>
+</td></tr>
+<tr><td style="padding:36px 32px;font-family:${BRAND.font};font-size:15px;line-height:1.6;color:${BRAND.ink};">
+${bodyHtml}
+</td></tr>
+<tr><td style="background:${BRAND.bg};padding:22px 32px;border-top:1px solid ${BRAND.border};">
+  <p style="margin:0;font-family:${BRAND.font};font-size:12px;line-height:1.7;color:${BRAND.faint};">
+    Meridian Gray &middot; Office 215, Center Point, 21 Hemanta Basu Sarani, Lal Dighi, B.B.D. Bagh, Kolkata 700001<br>
+    <a href="https://www.meridiangray.in" style="color:${BRAND.blue};text-decoration:none;">meridiangray.in</a> &middot; <a href="mailto:info@meridiangray.in" style="color:${BRAND.blue};text-decoration:none;">info@meridiangray.in</a> &middot; +91 79729 21514
+  </p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>`;
+}
+
+async function sendBrevoEmail(env, { subject, htmlContent, to, replyTo, preheader }) {
   if (!env.BREVO_API_KEY) return { skipped: true };
   const resp = await fetch("https://api.brevo.com/v3/smtp/email", {
     method: "POST",
@@ -42,11 +107,11 @@ async function sendBrevoEmail(env, { subject, htmlContent, to, replyTo }) {
       Accept: "application/json",
     },
     body: JSON.stringify({
-      sender: { name: "Meridian Gray Website", email: env.SENDER_EMAIL || "no-reply@meridiangray.in" },
+      sender: { name: "Meridian Gray", email: env.SENDER_EMAIL || "no-reply@meridiangray.in" },
       to: [{ email: to || env.NOTIFY_EMAIL }],
       replyTo: replyTo ? { email: replyTo } : undefined,
       subject,
-      htmlContent,
+      htmlContent: emailShell(htmlContent, { preheader: preheader || subject }),
     }),
   });
   if (!resp.ok) {
@@ -293,6 +358,18 @@ async function handleBookCall(request, env) {
   const acceptUrl = `${baseUrl}/api/booking-action?token=${actionToken}&action=accept`;
   const declineUrl = `${baseUrl}/api/booking-action?token=${actionToken}&action=decline`;
   const rescheduleUrl = `${baseUrl}/reschedule?token=${actionToken}`;
+  const icsUrl = `${baseUrl}/api/ics?token=${actionToken}`;
+  const slotStart = parseSlotToUtc(date, time);
+  const slotEnd = slotStart ? new Date(slotStart.getTime() + CALL_DURATION_MIN * 60000) : null;
+  const gcalUrl =
+    slotStart && slotEnd
+      ? googleCalendarAddLink({
+          title: `Meridian Gray strategy call — ${business_name || name}`,
+          description: `${modeLabel}. Organized by Meridian Gray (info@meridiangray.in).`,
+          start: slotStart,
+          end: slotEnd,
+        })
+      : null;
 
   // Internal notification — team reviews and accepts/declines, nothing is
   // confirmed to the client until one of these is clicked.
@@ -300,20 +377,20 @@ async function handleBookCall(request, env) {
     subject: `Call request — ${business_name || name}, ${niceDate} ${time} IST`,
     replyTo: email,
     htmlContent: `
-      <h2>New strategy call requested</h2>
-      <p><b>Name:</b> ${name}</p>
-      <p><b>Business:</b> ${business_name || "—"}</p>
-      <p><b>Sector:</b> ${sector || "—"} &middot; <b>Type:</b> ${business_type || "—"}</p>
-      <p><b>Email:</b> ${email} &middot; <b>Phone:</b> ${cc} ${phone}</p>
-      <p><b>When:</b> ${niceDate} at ${time} IST</p>
-      <p><b>How:</b> ${modeLabel}</p>
-      ${score_overall !== null ? `<p><b>Health Check score:</b> ${score_overall}/100</p>` : ""}
-      ${notes ? `<p><b>What they want to look at first:</b> ${notes}</p>` : ""}
-      <p style="margin-top:20px">
-        <a href="${acceptUrl}" style="background:#1a7f3c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;margin-right:10px">Accept</a>
-        <a href="${declineUrl}" style="background:#b3261e;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Decline</a>
-      </p>
-      <p style="color:#666;font-size:13px">Declining frees this slot immediately and lets the client know to pick another time. The slot is held (tentatively) on the calendar until you choose.</p>
+      <h2 style="margin:0 0 18px;font-size:19px;">New strategy call requested</h2>
+      <p style="margin:0 0 6px;"><b>Name:</b> ${name}</p>
+      <p style="margin:0 0 6px;"><b>Business:</b> ${business_name || "—"}</p>
+      <p style="margin:0 0 6px;"><b>Sector:</b> ${sector || "—"} &middot; <b>Type:</b> ${business_type || "—"}</p>
+      <p style="margin:0 0 6px;"><b>Email:</b> ${email} &middot; <b>Phone:</b> ${cc} ${phone}</p>
+      <p style="margin:0 0 6px;"><b>When:</b> ${niceDate} at ${time} IST</p>
+      <p style="margin:0 0 6px;"><b>How:</b> ${modeLabel}</p>
+      ${score_overall !== null ? `<p style="margin:0 0 6px;"><b>Health Check score:</b> ${score_overall}/100</p>` : ""}
+      ${notes ? `<p style="margin:0 0 6px;"><b>What they want to look at first:</b> ${notes}</p>` : ""}
+      <div style="margin-top:22px;">
+        ${emailButton("Accept", acceptUrl)}
+        ${emailButton("Decline", declineUrl, { variant: "danger" })}
+      </div>
+      <p style="color:${BRAND.faint};font-size:13px;margin-top:18px;">Declining frees this slot immediately and lets the client know to pick another time. The slot is held (tentatively) on the calendar until you choose.</p>
     `,
   });
 
@@ -321,13 +398,17 @@ async function handleBookCall(request, env) {
   await sendBrevoEmail(env, {
     to: email,
     subject: `Your call request — ${niceDate} at ${time} IST`,
+    preheader: `We're holding ${niceDate} at ${time} IST for you — confirming shortly.`,
     htmlContent: `
-      <h2>Got your request, ${name.split(" ")[0]}.</h2>
-      <p><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
-      <p>We're holding this slot and will confirm shortly by email. If it doesn't end up working on our end, we'll reach out to find another time.</p>
-      ${notes ? `<p>You mentioned you'd like to look at: <i>${notes}</i>. We'll come prepared.</p>` : ""}
-      <p>Need a different time? <a href="${rescheduleUrl}">Reschedule here</a>.</p>
-      <p>— Meridian Gray</p>
+      <h2 style="margin:0 0 14px;font-size:19px;">Got your request, ${name.split(" ")[0]}.</h2>
+      <p style="margin:0 0 10px;"><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
+      <p style="margin:0 0 10px;">We're holding this slot and will confirm shortly by email. If it doesn't end up working on our end, we'll reach out to find another time.</p>
+      ${notes ? `<p style="margin:0 0 10px;">You mentioned you'd like to look at: <i>${notes}</i>. We'll come prepared.</p>` : ""}
+      <div style="margin-top:20px;">
+        ${gcalUrl ? emailButton("Add to Google Calendar", gcalUrl) : ""}
+        ${emailButton("Download .ics (Outlook/Apple)", icsUrl, { variant: "outline" })}
+      </div>
+      <p style="margin-top:18px;font-size:13px;color:${BRAND.faint};">Need a different time? <a href="${rescheduleUrl}" style="color:${BRAND.blue};">Reschedule here</a>.</p>
     `,
   });
 
@@ -342,6 +423,7 @@ async function handleBookCall(request, env) {
         `Sector: ${sector || "—"} · Type: ${business_type || "—"}`,
         score_overall !== null ? `Health Check score: ${score_overall}/100` : null,
         notes ? `Wants to look at: ${notes}` : null,
+        `Contact: ${name} <${email}>, ${cc} ${phone}`.trim(),
         `Accept: ${acceptUrl}`,
         `Decline: ${declineUrl}`,
       ]
@@ -380,7 +462,7 @@ async function updateCalendarEventStatus(env, eventId, status, summaryPrefix) {
       patch.summary = (ev.summary || "").replace(/^\[.*?\]\s*/, summaryPrefix ? `[${summaryPrefix}] ` : "");
     }
   }
-  const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}?sendUpdates=all`, {
+  const resp = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}?sendUpdates=none`, {
     method: "PATCH",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify(patch),
@@ -411,17 +493,34 @@ async function handleBookingAction(request, env) {
   const rescheduleUrl = `https://meridiangray-backend.work-meridiangray.workers.dev/reschedule?token=${token}`;
   await env.DB.prepare(`UPDATE call_bookings SET status = ? WHERE action_token = ?`).bind(newStatus, token).run();
 
+  const icsUrl = `https://meridiangray-backend.work-meridiangray.workers.dev/api/ics?token=${token}`;
+  const slotStart = parseSlotToUtc(row.call_date, row.call_time);
+  const slotEnd = slotStart ? new Date(slotStart.getTime() + CALL_DURATION_MIN * 60000) : null;
+  const gcalUrl =
+    slotStart && slotEnd
+      ? googleCalendarAddLink({
+          title: `Meridian Gray strategy call — ${row.business_name || row.name}`,
+          description: `${row.mode === "phone" ? "Phone call" : "Video call"}.${row.meet_link ? ` Join: ${row.meet_link}` : ""} Organized by Meridian Gray (info@meridiangray.in).`,
+          start: slotStart,
+          end: slotEnd,
+        })
+      : null;
+
   if (action === "accept") {
     await updateCalendarEventStatus(env, row.calendar_event_id, "confirmed", "");
     await sendBrevoEmail(env, {
       to: row.email,
       subject: `Confirmed — your call on ${niceDate} at ${row.call_time} IST`,
+      preheader: `You're confirmed for ${niceDate} at ${row.call_time} IST.`,
       htmlContent: `
-        <h2>You're confirmed, ${String(row.name).split(" ")[0]}.</h2>
-        <p><b>${niceDate} at ${row.call_time} IST</b>, 30 minutes${row.meet_link ? `, via <a href="${row.meet_link}">${row.meet_link}</a>` : ""}.</p>
-        <p>See you then — reply to this email any time before the call if anything changes.</p>
-        <p>Need a different time instead? <a href="${rescheduleUrl}">Reschedule here</a>.</p>
-        <p>— Meridian Gray</p>
+        <h2 style="margin:0 0 14px;font-size:19px;">You're confirmed, ${String(row.name).split(" ")[0]}.</h2>
+        <p style="margin:0 0 10px;"><b>${niceDate} at ${row.call_time} IST</b>, 30 minutes${row.meet_link ? `, via <a href="${row.meet_link}" style="color:${BRAND.blue};">${row.meet_link}</a>` : ""}.</p>
+        <p style="margin:0 0 10px;">See you then — reply to this email any time before the call if anything changes.</p>
+        <div style="margin-top:20px;">
+          ${gcalUrl ? emailButton("Add to Google Calendar", gcalUrl) : ""}
+          ${emailButton("Download .ics (Outlook/Apple)", icsUrl, { variant: "outline" })}
+        </div>
+        <p style="margin-top:18px;font-size:13px;color:${BRAND.faint};">Need a different time instead? <a href="${rescheduleUrl}" style="color:${BRAND.blue};">Reschedule here</a>.</p>
       `,
     });
     return oauthHtmlPage("Accepted ✓", `<p>Confirmed with ${row.name} for ${niceDate} at ${row.call_time} IST. They've been emailed.</p>`);
@@ -430,10 +529,14 @@ async function handleBookingAction(request, env) {
     await sendBrevoEmail(env, {
       to: row.email,
       subject: `About your call request — ${niceDate} at ${row.call_time} IST`,
+      preheader: `That time didn't work on our end — let's find another.`,
       htmlContent: `
-        <h2>That time doesn't work for us, ${String(row.name).split(" ")[0]}.</h2>
-        <p>Sorry about that — could you pick another slot? <a href="https://www.meridiangray.in/where-you-stand.html">Choose a new time</a>, or <a href="${rescheduleUrl}">reschedule this request directly</a>.</p>
-        <p>— Meridian Gray</p>
+        <h2 style="margin:0 0 14px;font-size:19px;">That time doesn't work for us, ${String(row.name).split(" ")[0]}.</h2>
+        <p style="margin:0 0 14px;">Sorry about that — could you pick another slot?</p>
+        <div style="margin-top:6px;">
+          ${emailButton("Choose a new time", "https://www.meridiangray.in/where-you-stand.html")}
+          ${emailButton("Reschedule this request", rescheduleUrl, { variant: "outline" })}
+        </div>
       `,
     });
     return oauthHtmlPage("Declined", `<p>Declined ${row.name}'s request for ${niceDate} at ${row.call_time} IST. They've been emailed and the slot is free again.</p>`);
@@ -441,20 +544,31 @@ async function handleBookingAction(request, env) {
 }
 
 function rescheduleBaseStyles() {
-  return `body{font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:480px;margin:60px auto;padding:0 24px;color:#111}
-    h1{font-size:22px;margin-bottom:4px}
-    .sub{color:#666;font-size:14px;margin-bottom:24px}
-    label{display:block;font-weight:bold;margin-top:18px;margin-bottom:6px;font-size:14px}
-    input[type=date]{padding:8px;font-size:15px;border:1px solid #ccc;border-radius:6px;width:100%;box-sizing:border-box}
-    .slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-    .slot{padding:9px 14px;border:1px solid #ccc;border-radius:6px;cursor:pointer;font-size:14px;background:#fff}
-    .slot.selected{background:#244BDB;color:#fff;border-color:#244BDB}
-    .slot.taken{opacity:0.35;cursor:not-allowed;text-decoration:line-through}
-    button#submitBtn{margin-top:24px;background:#244BDB;color:#fff;border:none;padding:11px 22px;border-radius:6px;font-size:15px;font-weight:bold;cursor:pointer}
-    button#submitBtn:disabled{opacity:0.5;cursor:not-allowed}
-    #msg{margin-top:16px;font-size:14px}
-    #msg.error{color:#b3261e}
-    #msg.ok{color:#1a7f3c}`;
+  return `
+    *{box-sizing:border-box}
+    body{margin:0;font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;background:${BRAND.bg};color:${BRAND.ink};}
+    .wrap{max-width:480px;margin:0 auto;min-height:100vh;}
+    .bar{background:${BRAND.ink};padding:22px 28px;}
+    .bar .mark{border-left:3px solid ${BRAND.blue};padding-left:11px;}
+    .bar .word{font-size:18px;font-weight:700;letter-spacing:-.02em;color:#fff;}
+    .bar .word i{font-style:normal;color:${BRAND.blueLight}}
+    .bar .tag{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:${BRAND.faint};margin-top:6px;}
+    .card{background:${BRAND.card};border:1px solid ${BRAND.border};border-top:none;padding:36px 28px 44px;}
+    h1{font-size:21px;margin:0 0 6px;letter-spacing:-.01em;}
+    .sub{color:${BRAND.mute};font-size:14px;margin-bottom:26px;line-height:1.5;}
+    label{display:block;font-weight:700;margin-top:20px;margin-bottom:8px;font-size:13px;letter-spacing:.02em;text-transform:uppercase;color:${BRAND.faint};}
+    input[type=date]{padding:11px 12px;font-size:15px;font-family:inherit;border:1px solid ${BRAND.ink};border-radius:0;width:100%;background:#fff;color:${BRAND.ink};}
+    .slots{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+    .slot{padding:10px 16px;border:1px solid ${BRAND.ink};border-radius:0;cursor:pointer;font-size:14px;font-weight:500;background:#fff;color:${BRAND.ink};transition:background .15s,color .15s,border-color .15s;}
+    .slot.selected{background:${BRAND.blue};color:#fff;border-color:${BRAND.blue}}
+    .slot.taken{opacity:0.35;cursor:not-allowed;text-decoration:line-through;border-color:${BRAND.border}}
+    button#submitBtn{margin-top:26px;background:${BRAND.blue};color:#fff;border:1px solid ${BRAND.blue};padding:13px 24px;border-radius:0;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;}
+    button#submitBtn:disabled{opacity:0.4;cursor:not-allowed}
+    #msg{margin-top:18px;font-size:14px}
+    #msg.error{color:${BRAND.red}}
+    #msg.ok{color:${BRAND.green}}
+    .foot{padding:18px 28px;font-size:12px;color:${BRAND.faint};}
+    a{color:${BRAND.blue};}`;
 }
 
 async function handleReschedulePage(request, env) {
@@ -473,9 +587,13 @@ async function handleReschedulePage(request, env) {
   }
 
   const niceDate = formatCallDate(row.call_date);
-  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Reschedule your call</title>
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Reschedule your call — Meridian Gray</title>
+  <link rel="icon" href="https://www.meridiangray.in/favicon.ico">
   <style>${rescheduleBaseStyles()}</style></head>
   <body>
+  <div class="wrap">
+    <div class="bar"><div class="mark"><div class="word">MERIDIAN <i>GRAY</i></div><div class="tag">Connected Business Systems</div></div></div>
+    <div class="card">
     <h1>Reschedule your call</h1>
     <p class="sub">Currently booked for <b>${niceDate} at ${row.call_time} IST</b>. Pick a new date and time below.</p>
     <label for="dateInput">New date</label>
@@ -484,6 +602,9 @@ async function handleReschedulePage(request, env) {
     <div class="slots" id="slots"><span class="sub">Pick a date first</span></div>
     <button id="submitBtn" disabled>Confirm new time</button>
     <div id="msg"></div>
+    </div>
+    <div class="foot">Meridian Gray &middot; <a href="https://www.meridiangray.in">meridiangray.in</a></div>
+  </div>
     <script>
       const token = ${JSON.stringify(token)};
       const dateInput = document.getElementById('dateInput');
@@ -594,7 +715,7 @@ async function handleReschedule(request, env) {
     if (accessToken) {
       const start = parseSlotToUtc(date, time);
       const end = new Date(start.getTime() + CALL_DURATION_MIN * 60000);
-      await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${row.calendar_event_id}?sendUpdates=all`, {
+      await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${row.calendar_event_id}?sendUpdates=none`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -628,31 +749,48 @@ async function handleReschedule(request, env) {
     subject: `Rescheduled call request — ${row.business_name || row.name}, ${niceDate} ${time} IST`,
     replyTo: row.email,
     htmlContent: `
-      <h2>Call request rescheduled by client</h2>
-      <p><b>Name:</b> ${row.name}</p>
-      <p><b>Business:</b> ${row.business_name || "—"}</p>
-      <p><b>Sector:</b> ${row.sector || "—"} &middot; <b>Type:</b> ${row.business_type || "—"}</p>
-      <p><b>Email:</b> ${row.email} &middot; <b>Phone:</b> ${row.cc || ""} ${row.phone || ""}</p>
-      <p><b>Previous time:</b> ${formatCallDate(row.call_date)} at ${row.call_time} IST</p>
-      <p><b>New requested time:</b> ${niceDate} at ${time} IST</p>
-      <p><b>How:</b> ${modeLabel}</p>
-      ${row.notes ? `<p><b>What they want to look at first:</b> ${row.notes}</p>` : ""}
-      <p style="margin-top:20px">
-        <a href="${acceptUrl}" style="background:#1a7f3c;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold;margin-right:10px">Accept</a>
-        <a href="${declineUrl}" style="background:#b3261e;color:#fff;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Decline</a>
-      </p>
+      <h2 style="margin:0 0 18px;font-size:19px;">Call request rescheduled by client</h2>
+      <p style="margin:0 0 6px;"><b>Name:</b> ${row.name}</p>
+      <p style="margin:0 0 6px;"><b>Business:</b> ${row.business_name || "—"}</p>
+      <p style="margin:0 0 6px;"><b>Sector:</b> ${row.sector || "—"} &middot; <b>Type:</b> ${row.business_type || "—"}</p>
+      <p style="margin:0 0 6px;"><b>Email:</b> ${row.email} &middot; <b>Phone:</b> ${row.cc || ""} ${row.phone || ""}</p>
+      <p style="margin:0 0 6px;"><b>Previous time:</b> ${formatCallDate(row.call_date)} at ${row.call_time} IST</p>
+      <p style="margin:0 0 6px;"><b>New requested time:</b> ${niceDate} at ${time} IST</p>
+      <p style="margin:0 0 6px;"><b>How:</b> ${modeLabel}</p>
+      ${row.notes ? `<p style="margin:0 0 6px;"><b>What they want to look at first:</b> ${row.notes}</p>` : ""}
+      <div style="margin-top:22px;">
+        ${emailButton("Accept", acceptUrl)}
+        ${emailButton("Decline", declineUrl, { variant: "danger" })}
+      </div>
     `,
   });
 
   // Let the visitor know their new time is pending review, same as a fresh booking.
+  const icsUrl = `${baseUrl}/api/ics?token=${token}`;
+  const newStart = parseSlotToUtc(date, time);
+  const newEnd = newStart ? new Date(newStart.getTime() + CALL_DURATION_MIN * 60000) : null;
+  const gcalUrl =
+    newStart && newEnd
+      ? googleCalendarAddLink({
+          title: `Meridian Gray strategy call — ${row.business_name || row.name}`,
+          description: `${modeLabel}. Organized by Meridian Gray (info@meridiangray.in).`,
+          start: newStart,
+          end: newEnd,
+        })
+      : null;
+
   await sendBrevoEmail(env, {
     to: row.email,
     subject: `Your new time request — ${niceDate} at ${time} IST`,
+    preheader: `We're holding ${niceDate} at ${time} IST for you — confirming shortly.`,
     htmlContent: `
-      <h2>Got your new time, ${String(row.name).split(" ")[0]}.</h2>
-      <p><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
-      <p>We're holding this slot and will confirm shortly by email.</p>
-      <p>— Meridian Gray</p>
+      <h2 style="margin:0 0 14px;font-size:19px;">Got your new time, ${String(row.name).split(" ")[0]}.</h2>
+      <p style="margin:0 0 10px;"><b>${niceDate} at ${time} IST</b>, 30 minutes, by ${modeLabel.toLowerCase()}.</p>
+      <p style="margin:0 0 10px;">We're holding this slot and will confirm shortly by email.</p>
+      <div style="margin-top:20px;">
+        ${gcalUrl ? emailButton("Add to Google Calendar", gcalUrl) : ""}
+        ${emailButton("Download .ics (Outlook/Apple)", icsUrl, { variant: "outline" })}
+      </div>
     `,
   });
 
@@ -738,7 +876,14 @@ async function createCalendarEvent(env, { summary, description, date, time, atte
     description,
     start: { dateTime: start.toISOString(), timeZone: "Asia/Kolkata" },
     end: { dateTime: end.toISOString(), timeZone: "Asia/Kolkata" },
-    attendees: attendeeEmail ? [{ email: attendeeEmail }] : [],
+    // No `attendees` here on purpose: adding the visitor as a Calendar
+    // attendee makes Google send its own "invitation from an unknown sender"
+    // email straight from the personal Gmail account behind the OAuth
+    // connection — unbranded, flagged as unrecognized, and exactly what
+    // looked like spam. We handle every visitor-facing email ourselves
+    // (branded, from info@meridiangray.in) and give them a one-click
+    // "Add to Calendar" / .ics link instead — see googleCalendarAddLink()
+    // and handleIcsDownload() below.
     reminders: { useDefault: true },
     status: status || "confirmed",
   };
@@ -749,7 +894,7 @@ async function createCalendarEvent(env, { summary, description, date, time, atte
   }
 
   const resp = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=${wantMeet ? 1 : 0}&sendUpdates=all`,
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=${wantMeet ? 1 : 0}&sendUpdates=none`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -764,6 +909,106 @@ async function createCalendarEvent(env, { summary, description, date, time, atte
   const meetLink =
     (data.conferenceData && data.conferenceData.entryPoints && (data.conferenceData.entryPoints.find((e) => e.entryPointType === "video") || {}).uri) || null;
   return { eventId: data.id, meetLink };
+}
+
+// ---------------- Visitor-side "Add to Calendar" (no Google invite needed) ----------------
+// No calendar provider lets a third party write an event straight into someone
+// else's personal calendar without that person's own login/consent — that's
+// true for Google, Outlook and Apple alike, not a Meridian Gray limitation.
+// The practical, one-click equivalent (the same one Calendly etc. use) is a
+// prefilled "Add to Google Calendar" link plus a universal .ics download that
+// Outlook/Apple Calendar/anything else opens directly — both included on every
+// visitor-facing booking email.
+function icsUtcStamp(date) {
+  return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+}
+
+function googleCalendarAddLink({ title, description, location, start, end }) {
+  const params = new URLSearchParams({
+    action: "TEMPLATE",
+    text: title,
+    dates: `${icsUtcStamp(start)}/${icsUtcStamp(end)}`,
+    details: description || "",
+    location: location || "",
+  });
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
+}
+
+function icsFoldLine(line) {
+  // RFC 5545: lines over 75 octets must be folded with CRLF + a leading space.
+  const bytes = line;
+  if (bytes.length <= 75) return bytes;
+  let out = bytes.slice(0, 75);
+  let rest = bytes.slice(75);
+  while (rest.length > 0) {
+    out += "\r\n " + rest.slice(0, 74);
+    rest = rest.slice(74);
+  }
+  return out;
+}
+
+function icsEscape(s) {
+  return String(s || "")
+    .replace(/\\/g, "\\\\")
+    .replace(/;/g, "\\;")
+    .replace(/,/g, "\\,")
+    .replace(/\n/g, "\\n");
+}
+
+function buildIcs({ uid, title, description, location, start, end }) {
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Meridian Gray//Strategy Call//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}@meridiangray.in`,
+    `DTSTAMP:${icsUtcStamp(new Date())}`,
+    `DTSTART:${icsUtcStamp(start)}`,
+    `DTEND:${icsUtcStamp(end)}`,
+    `SUMMARY:${icsEscape(title)}`,
+    `DESCRIPTION:${icsEscape(description)}`,
+    `LOCATION:${icsEscape(location || "")}`,
+    "ORGANIZER;CN=Meridian Gray:mailto:info@meridiangray.in",
+    "STATUS:CONFIRMED",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ];
+  return lines.map(icsFoldLine).join("\r\n");
+}
+
+async function handleIcsDownload(request, env) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token") || "";
+  if (!token) return json({ error: "token is required" }, 400, env);
+
+  const row = await env.DB.prepare(`SELECT * FROM call_bookings WHERE action_token = ?`).bind(token).first();
+  if (!row) return json({ error: "not_found" }, 404, env);
+
+  const start = parseSlotToUtc(row.call_date, row.call_time);
+  if (!start) return json({ error: "invalid_booking" }, 400, env);
+  const end = new Date(start.getTime() + CALL_DURATION_MIN * 60000);
+  const modeLabel = row.mode === "phone" ? "Phone call — we call you" : "Video call";
+
+  const ics = buildIcs({
+    uid: row.action_token,
+    title: `Meridian Gray strategy call — ${row.business_name || row.name}`,
+    description: [`${modeLabel}.`, row.meet_link ? `Join: ${row.meet_link}` : null, "Organized by Meridian Gray (info@meridiangray.in)."]
+      .filter(Boolean)
+      .join("\n"),
+    location: row.meet_link || "",
+    start,
+    end,
+  });
+
+  return new Response(ics, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/calendar; charset=utf-8",
+      "Content-Disposition": `attachment; filename="meridian-gray-call.ics"`,
+    },
+  });
 }
 
 async function handleAvailability(request, env) {
@@ -796,9 +1041,28 @@ async function handleAvailability(request, env) {
 
 function oauthHtmlPage(title, body) {
   return new Response(
-    `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
-    <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:520px;margin:80px auto;padding:0 24px;color:#111}
-    h1{font-size:22px}a{color:#244BDB}</style></head><body><h1>${title}</h1>${body}</body></html>`,
+    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title} — Meridian Gray</title>
+    <link rel="icon" href="https://www.meridiangray.in/favicon.ico">
+    <style>
+      *{box-sizing:border-box}
+      body{margin:0;font-family:'Plus Jakarta Sans',Helvetica,Arial,sans-serif;background:${BRAND.bg};color:${BRAND.ink};}
+      .wrap{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+      .bar{background:${BRAND.ink};padding:22px 28px;}
+      .bar .mark{border-left:3px solid ${BRAND.blue};padding-left:11px;}
+      .bar .word{font-size:18px;font-weight:700;letter-spacing:-.02em;color:#fff;}
+      .bar .word i{font-style:normal;color:${BRAND.blueLight}}
+      .bar .tag{font-size:9px;letter-spacing:.3em;text-transform:uppercase;color:${BRAND.faint};margin-top:6px;}
+      .card{background:${BRAND.card};border:1px solid ${BRAND.border};border-top:none;padding:40px 28px;flex:1;}
+      h1{font-size:21px;margin:0 0 14px;letter-spacing:-.01em;}
+      p{font-size:15px;line-height:1.6;color:${BRAND.mute};margin:0 0 10px;}
+      a{color:${BRAND.blue};text-decoration:none;}
+      .foot{padding:18px 28px;font-size:12px;color:${BRAND.faint};}
+    </style></head>
+    <body><div class="wrap">
+      <div class="bar"><div class="mark"><div class="word">MERIDIAN <i>GRAY</i></div><div class="tag">Connected Business Systems</div></div></div>
+      <div class="card"><h1>${title}</h1>${body}</div>
+      <div class="foot">Meridian Gray &middot; <a href="https://www.meridiangray.in">meridiangray.in</a></div>
+    </div></body></html>`,
     { status: 200, headers: { "Content-Type": "text/html;charset=utf-8" } }
   );
 }
@@ -889,6 +1153,10 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/api/reschedule") {
       return handleReschedule(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/ics") {
+      return handleIcsDownload(request, env);
     }
 
     if (request.method === "GET" && url.pathname === "/oauth/start") {
