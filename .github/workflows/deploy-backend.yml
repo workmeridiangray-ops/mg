@@ -23,14 +23,21 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           workingDirectory: backend
 
-      - name: Sync Brevo API key as a Worker secret
+      - name: Sync secrets to the Worker
         working-directory: backend
         run: |
-          if [ -n "$BREVO_API_KEY" ]; then
-            echo "$BREVO_API_KEY" | npx wrangler secret put BREVO_API_KEY
-          else
-            echo "BREVO_API_KEY secret not set, skipping."
-          fi
+          put() {
+            if [ -n "$2" ]; then
+              echo "$2" | npx wrangler secret put "$1"
+            else
+              echo "$1 secret not set, skipping."
+            fi
+          }
+          put BREVO_API_KEY "$BREVO_API_KEY"
+          put GOOGLE_CLIENT_ID "$GOOGLE_CLIENT_ID"
+          put GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}

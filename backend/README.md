@@ -49,7 +49,35 @@ Settings → Triggers, add a custom route like `api.meridiangray.in/*` (requires
   market }`, each 0-100 — the frontend owns the scoring logic per sector, the backend
   just stores what it's given).
 - `POST /api/newsletter` — newsletter signup. Required: `email`.
+- `POST /api/book-call` — strategy-call booking. Required: `date` (YYYY-MM-DD),
+  `time` (e.g. "10:00 AM"), `info.name`, `info.email`. Stores the booking, emails
+  the team and the visitor, and — once Google Calendar is connected (see below) —
+  creates a real calendar event with a Google Meet link and invites the visitor.
+- `GET /api/availability?date=YYYY-MM-DD` — returns `{ available: [...] }`, the
+  fixed slot list (`backend/src/index.js` → `SLOTS`) minus whatever's already busy
+  on the connected Google Calendar. Falls back to showing every slot as open if
+  the calendar isn't connected yet.
 - `GET /api/health` — returns `{ok:true}` if the worker is live.
+
+## Google Calendar integration (one-time setup)
+
+Real availability and automatic event creation need a Google Calendar connected.
+This uses a normal OAuth client (not a service account), authorized once by
+whoever's calendar should be used:
+
+1. In Google Cloud Console, create an OAuth 2.0 **Web application** client
+   (APIs & Services → Credentials). Authorized redirect URI must be exactly:
+   `https://meridiangray-backend.work-meridiangray.workers.dev/oauth/callback`
+2. Add its `client_id` / `client_secret` as the `GOOGLE_CLIENT_ID` /
+   `GOOGLE_CLIENT_SECRET` GitHub repo secrets (same place as `CLOUDFLARE_API_TOKEN`
+   and `BREVO_API_KEY`) — the deploy workflow syncs them to the Worker automatically.
+3. Visit `https://meridiangray-backend.work-meridiangray.workers.dev/oauth/start`
+   in a browser, signed in as the Google account whose calendar should be used.
+   Approve calendar access. You'll land on a "Calendar connected ✓" page.
+
+That's it — the refresh token is stored in D1 (`app_settings` table) and reused
+indefinitely; no further logins needed. If you ever need to reconnect (e.g. a
+different calendar), just visit `/oauth/start` again.
 
 ## Health-check data
 

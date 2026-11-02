@@ -1,13 +1,16 @@
 /**
  * Meridian Gray — website backend (Cloudflare Worker)
  * Handles: contact/project-brief form, System Finder health-check submission,
- * newsletter signup. Writes to D1, sends notification email via Brevo.
+ * newsletter signup, and strategy-call booking (with optional real Google
+ * Calendar sync). Writes to D1, sends notification email via Brevo.
  *
  * Bindings required (set in wrangler.toml / dashboard):
- *   - DB            : D1 database binding (meridiangray-db)
- *   - BREVO_API_KEY : secret, Brevo transactional email API key
- *   - NOTIFY_EMAIL  : env var, where new-lead notifications are sent (e.g. info@meridiangray.in)
- *   - ALLOWED_ORIGIN: env var, e.g. https://www.meridiangray.in (CORS)
+ *   - DB                   : D1 database binding (meridiangray-db)
+ *   - BREVO_API_KEY        : secret, Brevo transactional email API key
+ *   - NOTIFY_EMAIL         : env var, where new-lead notifications are sent
+ *   - ALLOWED_ORIGIN       : env var, e.g. https://www.meridiangray.in (CORS)
+ *   - GOOGLE_CLIENT_ID     : secret, OAuth client id (optional — see README)
+ *   - GOOGLE_CLIENT_SECRET : secret, OAuth client secret (optional — see README)
  */
 
 function corsHeaders(env) {
@@ -301,7 +304,224 @@ async function handleBookCall(request, env) {
     `,
   });
 
-  return json({ ok: true }, 200, env);
+  // Real calendar integration: create an actual event with a Meet link and
+  // invite the visitor, if Google Calendar is connected (see /oauth/start).
+  // Booking already succeeded above regardless — this just upgrades it.
+  let calendarResult = null;
+  try {
+    calendarResult = await createCalendarEvent(env, {
+      summary: `Meridian Gray strategy call — ${business_name || name}`,
+      description: [
+        `Business: ${business_name || "—"}`,
+        `Sector: ${sector || "—"} · Type: ${business_type || "—"}`,
+        score_overall !== null ? `Health Check score: ${score_overall}/100` : null,
+        notes ? `Wants to look at: ${notes}` : null,
+      ]
+        .filter(Boolean)
+        .join("\n"),
+      date,
+      time,
+      attendeeEmail: isEmail(email) ? email : null,
+      wantMeet: mode !== "phone",
+    });
+    if (calendarResult) {
+      await env.DB.prepare(`UPDATE call_bookings SET calendar_event_id = ?, meet_link = ? WHERE email = ? AND call_date = ? AND call_time = ? ORDER BY id DESC LIMIT 1`)
+        .bind(calendarResult.eventId, calendarResult.meetLink || "", email, date, time)
+        .run()
+        .catch(() => {});
+    }
+  } catch (e) {
+    console.log("Calendar event creation skipped/failed:", e && e.message);
+  }
+
+  return json({ ok: true, calendar: !!calendarResult }, 200, env);
+}
+
+// ---------------- Google Calendar integration ----------------
+// One-time setup: visit /oauth/start as the admin, approve calendar access.
+// The resulting refresh token is stored in D1 (app_settings) and used for
+// every subsequent call — no further logins needed. See backend/README.md.
+
+const SLOTS = ["10:00 AM", "11:30 AM", "1:00 PM", "3:00 PM", "4:30 PM", "6:00 PM"];
+const CALL_DURATION_MIN = 30;
+const IST_OFFSET_MIN = 5 * 60 + 30;
+
+function parseSlotToUtc(dateStr, timeStr) {
+  const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "");
+  const tm = /^(\d{1,2}):(\d{2})\s*(AM|PM)$/i.exec(timeStr || "");
+  if (!dm || !tm) return null;
+  let hour = parseInt(tm[1], 10) % 12;
+  if (/pm/i.test(tm[3])) hour += 12;
+  const minute = parseInt(tm[2], 10);
+  const utcMillis = Date.UTC(+dm[1], +dm[2] - 1, +dm[3], hour, minute, 0) - IST_OFFSET_MIN * 60000;
+  return new Date(utcMillis);
+}
+
+async function getAppSetting(env, key) {
+  const row = await env.DB.prepare(`SELECT value FROM app_settings WHERE key = ?`).bind(key).first();
+  return row ? row.value : null;
+}
+async function setAppSetting(env, key, value) {
+  await env.DB.prepare(`INSERT INTO app_settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value`)
+    .bind(key, value)
+    .run();
+}
+
+async function getGoogleAccessToken(env) {
+  const refreshToken = await getAppSetting(env, "google_refresh_token");
+  if (!refreshToken || !env.GOOGLE_CLIENT_ID || !env.GOOGLE_CLIENT_SECRET) return null;
+  const resp = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      grant_type: "refresh_token",
+    }),
+  });
+  if (!resp.ok) {
+    console.log("Google token refresh failed:", resp.status, await resp.text());
+    return null;
+  }
+  const data = await resp.json();
+  return data.access_token || null;
+}
+
+async function getBusyTimes(env, timeMinISO, timeMaxISO) {
+  const token = await getGoogleAccessToken(env);
+  if (!token) return null; // not connected — caller treats everything as available
+  const resp = await fetch("https://www.googleapis.com/calendar/v3/freeBusy", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ timeMin: timeMinISO, timeMax: timeMaxISO, items: [{ id: "primary" }] }),
+  });
+  if (!resp.ok) {
+    console.log("freeBusy failed:", resp.status, await resp.text());
+    return null;
+  }
+  const data = await resp.json();
+  return (data.calendars && data.calendars.primary && data.calendars.primary.busy) || [];
+}
+
+async function createCalendarEvent(env, { summary, description, date, time, attendeeEmail, wantMeet }) {
+  const token = await getGoogleAccessToken(env);
+  if (!token) return null; // calendar not connected yet
+  const start = parseSlotToUtc(date, time);
+  if (!start) return null;
+  const end = new Date(start.getTime() + CALL_DURATION_MIN * 60000);
+
+  const event = {
+    summary,
+    description,
+    start: { dateTime: start.toISOString(), timeZone: "Asia/Kolkata" },
+    end: { dateTime: end.toISOString(), timeZone: "Asia/Kolkata" },
+    attendees: attendeeEmail ? [{ email: attendeeEmail }] : [],
+    reminders: { useDefault: true },
+  };
+  if (wantMeet) {
+    event.conferenceData = {
+      createRequest: { requestId: crypto.randomUUID(), conferenceSolutionKey: { type: "hangoutsMeet" } },
+    };
+  }
+
+  const resp = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=${wantMeet ? 1 : 0}&sendUpdates=all`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(event),
+    }
+  );
+  if (!resp.ok) {
+    console.log("Calendar event creation failed:", resp.status, await resp.text());
+    return null;
+  }
+  const data = await resp.json();
+  const meetLink =
+    (data.conferenceData && data.conferenceData.entryPoints && (data.conferenceData.entryPoints.find((e) => e.entryPointType === "video") || {}).uri) || null;
+  return { eventId: data.id, meetLink };
+}
+
+async function handleAvailability(request, env) {
+  const url = new URL(request.url);
+  const date = url.searchParams.get("date") || "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return json({ error: "date (YYYY-MM-DD) is required" }, 400, env);
+
+  const dayStartUtc = parseSlotToUtc(date, "12:00 AM");
+  if (!dayStartUtc) return json({ error: "invalid date" }, 400, env);
+  const dayEndUtc = new Date(dayStartUtc.getTime() + 24 * 60 * 60000);
+
+  const busy = await getBusyTimes(env, dayStartUtc.toISOString(), dayEndUtc.toISOString());
+  if (busy === null) {
+    // Calendar not connected yet — fall back to showing every slot as open.
+    return json({ ok: true, connected: false, available: SLOTS }, 200, env);
+  }
+
+  const available = SLOTS.filter((slot) => {
+    const slotStart = parseSlotToUtc(date, slot).getTime();
+    const slotEnd = slotStart + CALL_DURATION_MIN * 60000;
+    return !busy.some((b) => {
+      const bStart = new Date(b.start).getTime();
+      const bEnd = new Date(b.end).getTime();
+      return slotStart < bEnd && bStart < slotEnd;
+    });
+  });
+
+  return json({ ok: true, connected: true, available }, 200, env);
+}
+
+function oauthHtmlPage(title, body) {
+  return new Response(
+    `<!doctype html><html><head><meta charset="utf-8"><title>${title}</title>
+    <style>body{font-family:-apple-system,Helvetica,Arial,sans-serif;max-width:520px;margin:80px auto;padding:0 24px;color:#111}
+    h1{font-size:22px}a{color:#244BDB}</style></head><body><h1>${title}</h1>${body}</body></html>`,
+    { status: 200, headers: { "Content-Type": "text/html;charset=utf-8" } }
+  );
+}
+
+function handleOAuthStart(env) {
+  if (!env.GOOGLE_CLIENT_ID) return json({ error: "GOOGLE_CLIENT_ID not configured" }, 500, env);
+  const redirectUri = "https://meridiangray-backend.work-meridiangray.workers.dev/oauth/callback";
+  const params = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: "https://www.googleapis.com/auth/calendar",
+    access_type: "offline",
+    prompt: "consent",
+  });
+  return Response.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`, 302);
+}
+
+async function handleOAuthCallback(request, env) {
+  const url = new URL(request.url);
+  const code = url.searchParams.get("code");
+  const error = url.searchParams.get("error");
+  if (error) return oauthHtmlPage("Calendar connection failed", `<p>Google returned an error: ${error}</p>`);
+  if (!code) return oauthHtmlPage("Calendar connection failed", `<p>No authorization code was returned.</p>`);
+
+  const redirectUri = "https://meridiangray-backend.work-meridiangray.workers.dev/oauth/callback";
+  const resp = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      client_id: env.GOOGLE_CLIENT_ID,
+      client_secret: env.GOOGLE_CLIENT_SECRET,
+      code,
+      grant_type: "authorization_code",
+      redirect_uri: redirectUri,
+    }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.refresh_token) {
+    return oauthHtmlPage(
+      "Calendar connection failed",
+      `<p>Google didn't return a refresh token (${resp.status}). This usually means the account already granted access before — go to <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a>, remove "Meridian Gray", and try <a href="/oauth/start">/oauth/start</a> again.</p><pre>${JSON.stringify(data)}</pre>`
+    );
+  }
+  await setAppSetting(env, "google_refresh_token", data.refresh_token);
+  return oauthHtmlPage("Calendar connected ✓", `<p>Your Google Calendar is now connected. Real-time availability and automatic event creation are live. You can close this tab.</p>`);
 }
 
 export default {
@@ -330,6 +550,18 @@ export default {
 
     if (request.method === "POST" && url.pathname === "/api/book-call") {
       return handleBookCall(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/availability") {
+      return handleAvailability(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/oauth/start") {
+      return handleOAuthStart(env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/oauth/callback") {
+      return handleOAuthCallback(request, env);
     }
 
     return json({ error: "Not found" }, 404, env);
