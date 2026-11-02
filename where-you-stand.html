@@ -4639,6 +4639,17 @@ html.embed header.top{justify-content:flex-start;padding-top:0}
 .au-lead{margin:0;font-size:14px;color:var(--muted)}
 .au-sum{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;align-items:center}
 .au-sum p{margin:0;font-size:15.5px;line-height:1.7}
+.au-lockpanel{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,.9fr);gap:0;border:1px solid #111;background:#fff}
+.au-lp-rows{display:grid;align-content:start;gap:1px;background:#E3E5EA;border-right:1px solid #111}
+.au-lp-row{display:flex;align-items:center;gap:12px;background:#fff;padding:16px 20px}
+.au-lp-row span{font-size:14px;font-weight:600}
+.au-lp-row .au-lk{width:34px;flex:none}
+.au-lp-cta{background:#111;color:#fff;padding:28px 26px;display:grid;align-content:center;gap:10px}
+.au-lp-cta .pm-eb{color:#9FB4FF!important}
+.au-lp-cta h3{margin:0;font-size:19px;font-weight:600;line-height:1.3}
+.au-lp-cta p{margin:0;font-size:13.5px;line-height:1.6;color:rgba(255,255,255,.72)}
+.au-lp-cta .pm-btn{margin-top:8px;justify-self:start}
+@media (max-width:760px){.au-lockpanel{grid-template-columns:1fr}.au-lp-rows{border-right:0;border-bottom:1px solid #111}}
 .au-kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .au-kpi div{border-radius:0;padding:14px;display:grid;gap:2px}
 .au-kpi b{font-size:30px;font-weight:700;line-height:1}.au-kpi span{font-size:12px;font-weight:600}
@@ -5574,13 +5585,13 @@ function calLinks(B,i){var p=B.date.split('-'),m=/^(\d+):(\d+)\s*(AM|PM)$/.exec(
   return {google:esc(g),outlook:esc(o),ics:'data:text/calendar;charset=utf-8,'+encodeURIComponent(ics)};}
 function stepBook(){S.book=S.book||{};if(S.book.mode==='office')S.book.mode='video';var B=S.book,i=S.info||{},days=bookDays();
   if(B.date&amp;&amp;!days.some(function(d){return dkey(d)===B.date;}))B.date=null;
-  var h='&lt;section class=&quot;panel bk&quot;&gt;&lt;div&gt;&lt;button class=&quot;topback&quot; data-go=&quot;4&quot;&gt;&lt;i aria-hidden=&quot;true&quot;&gt;\u2190&lt;/i&gt; Back to diagnosis&lt;/button&gt;&lt;div class=&quot;eyebrow&quot;&gt;Step 5 of 5 \u00b7 '+label()+'&lt;/div&gt;&lt;h2&gt;Book a strategy &lt;em&gt;call&lt;/em&gt;.&lt;/h2&gt;&lt;p class=&quot;lede&quot;&gt;30 minutes to walk through your diagnosis'+(i.biz?' for '+esc(i.biz):'')+', before these gaps cost you another month.&lt;/p&gt;&lt;/div&gt;';
+  var h='&lt;section class=&quot;panel bk&quot;&gt;&lt;div&gt;&lt;button class=&quot;topback&quot; data-go=&quot;4&quot;&gt;&lt;i aria-hidden=&quot;true&quot;&gt;\u2190&lt;/i&gt; Back to diagnosis&lt;/button&gt;&lt;div class=&quot;eyebrow&quot;&gt;Step 5 of 5 \u00b7 '+label()+'&lt;/div&gt;&lt;h2&gt;Book a strategy &lt;em&gt;call&lt;/em&gt;.&lt;/h2&gt;&lt;p class=&quot;lede&quot;&gt;'+(S.unlockIntent&amp;&amp;!B.done?'Book this call to unlock your full report \u2014 ':'')+'30 minutes to walk through your diagnosis'+(i.biz?' for '+esc(i.biz):'')+', before these gaps cost you another month.&lt;/p&gt;&lt;/div&gt;';
   var tz=teaser(),ovv=overall(),hid=Math.max(0,quickWins().length-1);if(ovv!==null)h+='&lt;div class=&quot;bk-sum&quot;&gt;&lt;span class=&quot;pm-eb&quot;&gt;/ On your call&lt;/span&gt;&lt;div&gt;&lt;b&gt;'+ovv+'&lt;small&gt;/100&lt;/small&gt;&lt;/b&gt;&lt;span&gt;Your score, explained&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;b&gt;'+tz.gaps+'&lt;/b&gt;&lt;span&gt;Gaps, one by one&lt;/span&gt;&lt;/div&gt;'+(hid?'&lt;div&gt;&lt;b&gt;'+hid+'&lt;/b&gt;&lt;span&gt;Hidden leaks revealed&lt;/span&gt;&lt;/div&gt;':'')+'&lt;div&gt;&lt;b&gt;'+tz.systems+'&lt;/b&gt;&lt;span&gt;Missing connections mapped&lt;/span&gt;&lt;/div&gt;&lt;/div&gt;';
   if(B.done){
     var cal=calLinks(B,i),md=MODES.filter(function(m){return m[0]===B.mode;})[0]||MODES[0];
     h+='&lt;div class=&quot;bk-done&quot;&gt;&lt;span class=&quot;pm-eb&quot;&gt;/ Your slot&lt;/span&gt;&lt;h3&gt;'+(i.name?'Thank you, '+esc(i.name.split(' ')[0])+'.':'Thank you.')+'&lt;/h3&gt;&lt;p&gt;&lt;b&gt;'+dlabel(B.date)+' at '+B.time+' IST&lt;/b&gt;, 30 minutes, by &lt;b&gt;'+md[1].toLowerCase()+'&lt;/b&gt;. '+(B.custom?'This is your suggested time, so we’ll confirm it works for our team. ':'')+'Add it to your calendar so it’s held.&lt;/p&gt;'
      +'&lt;div class=&quot;cal-btns&quot;&gt;&lt;a class=&quot;cal-b&quot; href=&quot;'+cal.google+'&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;&lt;b&gt;Google Calendar&lt;/b&gt;&lt;small&gt;Opens in a new tab&lt;/small&gt;&lt;/a&gt;&lt;a class=&quot;cal-b&quot; href=&quot;'+cal.outlook+'&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot;&gt;&lt;b&gt;Outlook&lt;/b&gt;&lt;small&gt;Opens in a new tab&lt;/small&gt;&lt;/a&gt;&lt;/div&gt;'
-     +'&lt;div class=&quot;bk-note&quot;&gt;'+(S._bookFailed?'We couldn’t reach our booking system just now — please also email or WhatsApp us this time so it’s not missed.':'We’ve been notified and will confirm this slot by email shortly.')+'&lt;/div&gt;&lt;div class=&quot;ac-actions&quot;&gt;&lt;button class=&quot;aud-link&quot; data-bk=&quot;edit&quot;&gt;Change time&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;';
+     +'&lt;div class=&quot;bk-note&quot;&gt;'+(S._bookFailed?'We couldn’t reach our booking system just now — please also email or WhatsApp us this time so it’s not missed.':'We’ve been notified and will confirm this slot by email shortly.')+'&lt;/div&gt;&lt;div class=&quot;ac-actions&quot;&gt;'+(S.reportUnlocked?'&lt;button class=&quot;pm-btn red&quot; data-go=&quot;4&quot;&gt;View my full report &lt;i aria-hidden=&quot;true&quot;&gt;→&lt;/i&gt;&lt;/button&gt;':'')+'&lt;button class=&quot;aud-link&quot; data-bk=&quot;edit&quot;&gt;Change time&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;';
     return h;}
   h+='&lt;div class=&quot;bk-grid solo&quot;&gt;&lt;div class=&quot;bk-main&quot;&gt;';
   h+='&lt;div class=&quot;bk-sec&quot;&gt;&lt;div class=&quot;bk-h&quot;&gt;&lt;b&gt;1&lt;/b&gt; Choose a day&lt;/div&gt;&lt;div class=&quot;days&quot; role=&quot;radiogroup&quot; aria-label=&quot;Day&quot;&gt;'+days.map(function(d){var k=dkey(d),on=B.date===k;return '&lt;button class=&quot;day'+(on?' on':'')+'&quot; data-bkd=&quot;'+k+'&quot; aria-pressed=&quot;'+on+'&quot;&gt;&lt;small&gt;'+d.toLocaleDateString('en-IN',{weekday:'short'})+'&lt;/small&gt;&lt;b&gt;'+d.getDate()+'&lt;/b&gt;&lt;small&gt;'+d.toLocaleDateString('en-IN',{month:'short'})+'&lt;/small&gt;&lt;/button&gt;';}).join('')+'&lt;/div&gt;&lt;/div&gt;';
@@ -5589,7 +5600,7 @@ function stepBook(){S.book=S.book||{};if(S.book.mode==='office')S.book.mode='vid
    +(B.date&amp;&amp;B.copen?'&lt;div class=&quot;cust-row&quot;&gt;&lt;label for=&quot;bk-ctime&quot;&gt;Your preferred time (IST)&lt;/label&gt;&lt;input id=&quot;bk-ctime&quot; data-bkct=&quot;1&quot; type=&quot;time&quot; min=&quot;09:00&quot; max=&quot;20:00&quot; step=&quot;900&quot; value=&quot;'+(B.custom&amp;&amp;B.t24?B.t24:'')+'&quot;&gt;&lt;small&gt;Between 9:00 AM and 8:00 PM. We’ll confirm if it works for our team.&lt;/small&gt;&lt;/div&gt;':'')
    +(B.date?'':'&lt;p class=&quot;bk-hint&quot;&gt;Choose a day first.&lt;/p&gt;')+'&lt;/div&gt;';
   h+='&lt;div class=&quot;bk-sec&quot;&gt;&lt;div class=&quot;bk-h&quot;&gt;&lt;b&gt;3&lt;/b&gt; How should we meet?&lt;/div&gt;&lt;div class=&quot;modes&quot;&gt;'+MODES.map(function(m){var on=(B.mode||'video')===m[0];return '&lt;button class=&quot;mode'+(on?' on':'')+'&quot; data-bkm=&quot;'+m[0]+'&quot; aria-pressed=&quot;'+on+'&quot;&gt;&lt;b&gt;'+m[1]+'&lt;/b&gt;&lt;small&gt;'+m[2]+'&lt;/small&gt;&lt;/button&gt;';}).join('')+'&lt;/div&gt;&lt;/div&gt;';
-  h+='&lt;div class=&quot;bk-sec&quot;&gt;&lt;div class=&quot;bk-h&quot;&gt;&lt;b&gt;4&lt;/b&gt; Anything to look at first? &lt;span&gt;Optional&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;fd bk-nt&quot;&gt;&lt;label class=&quot;sr-only&quot; for=&quot;bk-notes&quot;&gt;Anything you’d like us to look at first?&lt;/label&gt;&lt;input id=&quot;bk-notes&quot; data-bkn=&quot;1&quot; type=&quot;text&quot; maxlength=&quot;200&quot; value=&quot;'+esc(B.notes||'')+'&quot; placeholder=&quot;e.g. our quotation process, or a question you want answered&quot;&gt;&lt;/div&gt;&lt;/div&gt;';
+  h+='&lt;div class=&quot;bk-sec&quot;&gt;&lt;div class=&quot;bk-h&quot;&gt;&lt;b&gt;4&lt;/b&gt; '+(S.unlockIntent?'What’s the one thing you’d want us to fix first?':'Anything to look at first?')+' &lt;span&gt;'+(S.unlockIntent?'Required to unlock your report':'Optional')+'&lt;/span&gt;&lt;/div&gt;&lt;div class=&quot;fd bk-nt&quot;&gt;&lt;label class=&quot;sr-only&quot; for=&quot;bk-notes&quot;&gt;'+(S.unlockIntent?'What’s the one thing you’d want us to fix first?':'Anything you’d like us to look at first?')+'&lt;/label&gt;&lt;input id=&quot;bk-notes&quot; data-bkn=&quot;1&quot; type=&quot;text&quot; maxlength=&quot;200&quot; value=&quot;'+esc(B.notes||'')+'&quot; placeholder=&quot;e.g. our quotation process, or a question you want answered&quot;&gt;&lt;/div&gt;&lt;/div&gt;';
   var ready=B.date&amp;&amp;B.time;
   h+='&lt;div class=&quot;bk-foot&quot;&gt;&lt;div&gt;&lt;small&gt;Your call&lt;/small&gt;&lt;b&gt;'+(ready?dlabel(B.date)+' · '+B.time+' IST':'Pick a day and time')+'&lt;/b&gt;&lt;/div&gt;&lt;button class=&quot;pm-btn red&quot; data-bk=&quot;confirm&quot;'+(ready?'':' disabled')+'&gt;Add to calendar &lt;i aria-hidden=&quot;true&quot;&gt;→&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;p class=&quot;hint&quot; id=&quot;bk-hint&quot;&gt;&lt;/p&gt;';
   h+='&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;';
@@ -5601,8 +5612,9 @@ document.getElementById('app').addEventListener('click',function(e){if(S.step!==
   else if(t.dataset.bkm){S.book.mode=t.dataset.bkm;}
   else if(t.dataset.bk==='edit'){S.book.done=false;}
   else if(t.dataset.bk==='confirm'){var i=S.info||{},err=[];
+    if(S.unlockIntent&amp;&amp;!(S.book.notes&amp;&amp;S.book.notes.trim()))err.push('what you’d want us to fix first');
     if(err.length){var hn=document.getElementById('bk-hint');if(hn){hn.textContent='Please add '+(err.length&gt;1?err.slice(0,-1).join(', ')+' and '+err[err.length-1]:err[0])+' so we can confirm your call.';hn.className='hint warn';}return;}
-    S.book.mode=S.book.mode||'video';S.book.done=true;S._bookFailed=false;persist();render();window.scrollTo({top:0,behavior:'smooth'});submitBooking();return;}
+    S.book.mode=S.book.mode||'video';S.book.done=true;S._bookFailed=false;if(S.unlockIntent){S.reportUnlocked=1;S.unlockIntent=0;}persist();render();window.scrollTo({top:0,behavior:'smooth'});submitBooking();return;}
   persist();render();window.scrollTo(0,y);},true);
 document.getElementById('app').addEventListener('change',function(e){var el=e.target;if(!el.dataset||!el.dataset.bkct||S.step!==5)return;var v=el.value;S.book=S.book||{};if(!/^\d{2}:\d{2}$/.test(v))return;var h=+v.slice(0,2),m=v.slice(3);if(h&lt;9||h&gt;20||(h===20&amp;&amp;m!=='00')){var hn=document.getElementById('bk-hint');if(hn){hn.textContent='Choose a time between 9:00 AM and 8:00 PM IST.';hn.className='hint warn';}return;}
   S.book.t24=v;S.book.time=((h%12)||12)+':'+m+' '+(h&lt;12?'AM':'PM');S.book.custom=true;S.book.copen=false;persist();var y=window.scrollY;render();window.scrollTo(0,y);});
@@ -5629,7 +5641,7 @@ function submitBooking(){
   fetch(BOOKCALL_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
     date:B.date,time:B.time,mode:B.mode||'video',notes:B.notes||'',
     sector:(ind()||{}).id||'',business_type:(typ()||{}).id||'',
-    score_overall:overall(),info:S.info||{}
+    score_overall:overall(),info:S.info||{},report_token:S.reportToken||''
   })}).then(function(r){S._bookFailed=!r.ok;persist();render();}).catch(function(){S._bookFailed=true;persist();render();});
 }
 function submitHealthCheck(){
@@ -5646,9 +5658,23 @@ function submitHealthCheck(){
       answers:S.ans||{},
       answers_text:buildAnswersText(),
       scores:scores
-    })}).catch(function(){});
+    })}).then(function(r){return r.ok?r.json():null;}).then(function(data){if(data&amp;&amp;data.report_token){S.reportToken=data.report_token;persist();}}).catch(function(){});
   }catch(e){}
 }
+var REPORTSTATUS_ENDPOINT='https://meridiangray-backend.work-meridiangray.workers.dev/api/report-status';
+function checkReportUnlock(token){
+  if(!token||S.reportUnlocked)return;
+  fetch(REPORTSTATUS_ENDPOINT+'?token='+encodeURIComponent(token)).then(function(r){return r.ok?r.json():null;}).then(function(data){
+    if(data&amp;&amp;data.unlocked){S.reportUnlocked=1;S.reportToken=S.reportToken||token;persist();render();}
+  }).catch(function(){});
+}
+// A returning visitor opening their emailed &quot;access your report&quot; link posts
+// this from the parent page (where-you-stand.html) with their report token.
+window.addEventListener('message',function(e){
+  if(!e||!e.data||e.data.type!=='mg-report-token'||!e.data.token)return;
+  S.reportToken=e.data.token;persist();
+  checkReportUnlock(e.data.token);
+});
 var app=document.getElementById('app');
 function esc(s){return String(s).replace(/[&amp;&lt;&gt;&quot;]/g,function(c){return {'&amp;':'&amp;amp;','&lt;':'&amp;lt;','&gt;':'&amp;gt;','&quot;':'&amp;quot;'}[c];});}
 function ind(){return IND.filter(function(i){return i.id===S.ind;})[0];}
@@ -5949,7 +5975,8 @@ function copy(txt){
 
 /* ---------- EVENTS ---------- */
 app.addEventListener('click',function(e){
-  var t=e.target.closest('[data-jumpq],[data-sub],[data-go],[data-browse],[data-pick],[data-jump],[data-custom],[data-ind],[data-type],[data-clear],[data-q],[data-mod],[data-filter],#copy,#restart');if(!t||t.disabled)return;
+  var t=e.target.closest('[data-jumpq],[data-sub],[data-go],[data-browse],[data-pick],[data-jump],[data-custom],[data-ind],[data-type],[data-clear],[data-q],[data-mod],[data-filter],[data-unlock],#copy,#restart');if(!t||t.disabled)return;
+  if(t.dataset.unlock){S.unlockIntent=1;persist();return go(5);}
   if(t.dataset.sub){var ord=['info','q'],to=t.dataset.sub,fwd=ord.indexOf(to)&gt;ord.indexOf(S.sub||'info');if(fwd&amp;&amp;!infoShow())return;S.subDir=fwd?'fwd':'back';S.sub=to;S.anim2=1;render();S.anim2=0;window.scrollTo({top:0,behavior:'smooth'});return;}
   if(t.dataset.go&amp;&amp;S.step===2&amp;&amp;+t.dataset.go&gt;2&amp;&amp;!infoOk()){render();infoShow();return;}
   if(t.dataset.go) return go(+t.dataset.go);
@@ -6058,12 +6085,19 @@ var unlockedSet=(function(){
 h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;03&lt;/span&gt;Findings register&lt;/h3&gt;&lt;p class=&quot;au-lead&quot;&gt;Every practice rated from your answers. A handful are shown in full; the rest are walked through with evidence on your strategy call.&lt;/p&gt;&lt;div class=&quot;au-reg&quot;&gt;&lt;div class=&quot;au-rh&quot;&gt;&lt;span&gt;Ref&lt;/span&gt;&lt;span&gt;Discipline&lt;/span&gt;&lt;span&gt;Rating&lt;/span&gt;&lt;span&gt;Finding&lt;/span&gt;&lt;/div&gt;';
 F.forEach(function(f,k){var first=!!unlockedSet[f.q.id];h+='&lt;div class=&quot;au-row'+(first?' open':'')+'&quot;&gt;&lt;span class=&quot;au-ref&quot;&gt;F'+String(k+1).padStart(2,'0')+'&lt;/span&gt;&lt;span&gt;'+f.pn+'&lt;/span&gt;&lt;span&gt;&lt;i class=&quot;au-chip '+f.sev+'&quot;&gt;'+SEV[f.sev][0]+'&lt;/i&gt;&lt;/span&gt;&lt;span class=&quot;au-fd&quot;&gt;'+(first?'&lt;b&gt;'+esc(f.q.t)+'&lt;/b&gt;&lt;q&gt;'+esc(f.o[0])+'&lt;/q&gt;&lt;small&gt;'+esc(/don.t have a website/i.test(f.o[0])?'Without a website, buyers who search for you find your competitors instead, and every enquiry depends on old contacts.':(PAIN[f.q.id]||f.q.w||''))+'&lt;/small&gt;':'&lt;i class=&quot;au-lk&quot; aria-label=&quot;Locked&quot;&gt;&lt;/i&gt;&lt;i class=&quot;au-lk s&quot;&gt;&lt;/i&gt;')+'&lt;/span&gt;&lt;/div&gt;';});
 h+='&lt;/div&gt;&lt;/div&gt;';
-h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;04&lt;/span&gt;Auditor’s observations&lt;/h3&gt;&lt;div class=&quot;au-obs&quot;&gt;'+pat.map(function(p){return '&lt;div&gt;&lt;b&gt;'+p[0]+'&lt;/b&gt;&lt;p&gt;'+p[1]+'&lt;/p&gt;&lt;/div&gt;';}).join('')+'&lt;/div&gt;&lt;/div&gt;';
-if(goals.length)h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;05&lt;/span&gt;Your goals against your scores&lt;/h3&gt;&lt;div class=&quot;au-goals&quot;&gt;'+goals.map(function(g){var ok=g.p.pct&gt;=60;return '&lt;div class=&quot;'+(ok?'ok':'risk')+'&quot;&gt;&lt;b&gt;'+esc(g.t)+'&lt;/b&gt;&lt;span&gt;Depends on '+g.p.p.name+' · '+g.p.pct+'/100&lt;/span&gt;&lt;em&gt;'+(ok?'Supported':'At risk')+'&lt;/em&gt;&lt;/div&gt;';}).join('')+'&lt;/div&gt;&lt;/div&gt;';
-if(rd)h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;06&lt;/span&gt;Readiness to change&lt;/h3&gt;&lt;div class=&quot;au-card au-rd&quot;&gt;&lt;div class=&quot;au-rdv '+rd.toLowerCase()+'&quot;&gt;&lt;b&gt;'+rd+'&lt;/b&gt;&lt;span&gt;readiness&lt;/span&gt;&lt;/div&gt;&lt;ul&gt;'+rn.map(function(x){return '&lt;li&gt;'+x+'&lt;/li&gt;';}).join('')+'&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;';
 var ph=[Ms.slice(0,2),Ms.slice(2,4),Ms.slice(4)];
-h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;07&lt;/span&gt;Recommended sequence&lt;/h3&gt;&lt;div class=&quot;au-ph&quot;&gt;'+['Fix the foundation','Connect and automate','Optimise and grow'].map(function(n,k){return ph[k].length?'&lt;div&gt;&lt;span&gt;Phase '+(k+1)+'&lt;/span&gt;&lt;b&gt;'+n+'&lt;/b&gt;&lt;p&gt;'+ph[k].map(function(m){return m.p.name;}).join(' · ')+'&lt;/p&gt;&lt;i class=&quot;au-lk&quot;&gt;&lt;/i&gt;&lt;i class=&quot;au-lk s&quot;&gt;&lt;/i&gt;&lt;/div&gt;':'';}).join('')+'&lt;/div&gt;&lt;p class=&quot;au-note&quot;&gt;The detailed actions, order and effort for each phase are part of the full report.&lt;/p&gt;&lt;/div&gt;';
-h+='&lt;div class=&quot;sol-cta&quot;&gt;&lt;div&gt;&lt;span class=&quot;pm-eb&quot;&gt;Full audit report&lt;/span&gt;&lt;h3&gt;'+(C.high+C.med)+' risk findings are still open.&lt;/h3&gt;&lt;p&gt;On a 30-minute strategy call we walk through every finding with evidence, the root causes behind them and a phased plan to close them.&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;pm-btn red&quot; data-go=&quot;5&quot;&gt;Book my strategy call &lt;i aria-hidden=&quot;true&quot;&gt;→&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;';
+var reportUnlocked=!!S.reportUnlocked||!!S._demo;
+if(reportUnlocked){
+  h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;04&lt;/span&gt;Auditor’s observations&lt;/h3&gt;&lt;div class=&quot;au-obs&quot;&gt;'+pat.map(function(p){return '&lt;div&gt;&lt;b&gt;'+p[0]+'&lt;/b&gt;&lt;p&gt;'+p[1]+'&lt;/p&gt;&lt;/div&gt;';}).join('')+'&lt;/div&gt;&lt;/div&gt;';
+  if(goals.length)h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;05&lt;/span&gt;Your goals against your scores&lt;/h3&gt;&lt;div class=&quot;au-goals&quot;&gt;'+goals.map(function(g){var ok=g.p.pct&gt;=60;return '&lt;div class=&quot;'+(ok?'ok':'risk')+'&quot;&gt;&lt;b&gt;'+esc(g.t)+'&lt;/b&gt;&lt;span&gt;Depends on '+g.p.p.name+' · '+g.p.pct+'/100&lt;/span&gt;&lt;em&gt;'+(ok?'Supported':'At risk')+'&lt;/em&gt;&lt;/div&gt;';}).join('')+'&lt;/div&gt;&lt;/div&gt;';
+  if(rd)h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;06&lt;/span&gt;Readiness to change&lt;/h3&gt;&lt;div class=&quot;au-card au-rd&quot;&gt;&lt;div class=&quot;au-rdv '+rd.toLowerCase()+'&quot;&gt;&lt;b&gt;'+rd+'&lt;/b&gt;&lt;span&gt;readiness&lt;/span&gt;&lt;/div&gt;&lt;ul&gt;'+rn.map(function(x){return '&lt;li&gt;'+x+'&lt;/li&gt;';}).join('')+'&lt;/ul&gt;&lt;/div&gt;&lt;/div&gt;';
+  h+='&lt;div class=&quot;au-sec&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;07&lt;/span&gt;Recommended sequence&lt;/h3&gt;&lt;div class=&quot;au-ph&quot;&gt;'+['Fix the foundation','Connect and automate','Optimise and grow'].map(function(n,k){return ph[k].length?'&lt;div&gt;&lt;span&gt;Phase '+(k+1)+'&lt;/span&gt;&lt;b&gt;'+n+'&lt;/b&gt;&lt;p&gt;'+ph[k].map(function(m){return m.p.name;}).join(' · ')+'&lt;/p&gt;&lt;i class=&quot;au-lk&quot;&gt;&lt;/i&gt;&lt;i class=&quot;au-lk s&quot;&gt;&lt;/i&gt;&lt;/div&gt;':'';}).join('')+'&lt;/div&gt;&lt;p class=&quot;au-note&quot;&gt;The detailed actions, order and effort for each phase are part of the full report.&lt;/p&gt;&lt;/div&gt;';
+  h+='&lt;div class=&quot;sol-cta&quot;&gt;&lt;div&gt;&lt;span class=&quot;pm-eb&quot;&gt;Full audit report&lt;/span&gt;&lt;h3&gt;'+(C.high+C.med)+' risk findings are still open.&lt;/h3&gt;&lt;p&gt;On a 30-minute strategy call we walk through every finding with evidence, the root causes behind them and a phased plan to close them.&lt;/p&gt;&lt;/div&gt;&lt;button class=&quot;pm-btn red&quot; data-go=&quot;5&quot;&gt;Book my strategy call &lt;i aria-hidden=&quot;true&quot;&gt;→&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/section&gt;';
+}else{
+  h+='&lt;div class=&quot;au-sec au-locked&quot;&gt;&lt;h3 class=&quot;au-h&quot;&gt;&lt;span&gt;04–07&lt;/span&gt;Observations, goal fit, readiness &amp;amp; recommended sequence&lt;/h3&gt;'
+   +'&lt;div class=&quot;au-lockpanel&quot;&gt;&lt;div class=&quot;au-lp-rows&quot;&gt;'+['Auditor’s observations','Your goals against your scores','Readiness to change','Recommended sequence'].map(function(n){return '&lt;div class=&quot;au-lp-row&quot;&gt;&lt;i class=&quot;au-lk&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;'+n+'&lt;/span&gt;&lt;/div&gt;';}).join('')+'&lt;/div&gt;'
+   +'&lt;div class=&quot;au-lp-cta&quot;&gt;&lt;span class=&quot;pm-eb&quot;&gt;Full report locked&lt;/span&gt;&lt;h3&gt;The rest of your report is ready — book a 30-minute strategy call to unlock it.&lt;/h3&gt;&lt;p&gt;We’ll walk through why each score is what it is, what to fix first, and send the complete report to your inbox.&lt;/p&gt;&lt;button class=&quot;pm-btn red&quot; type=&quot;button&quot; data-unlock=&quot;1&quot;&gt;Book my strategy call to unlock &lt;i aria-hidden=&quot;true&quot;&gt;→&lt;/i&gt;&lt;/button&gt;&lt;/div&gt;&lt;/div&gt;&lt;/div&gt;&lt;/section&gt;';
+}
 return h;}
 
 // Internal preview hook: the parent page (where-you-stand.html) posts this
@@ -7044,6 +7078,12 @@ fr.addEventListener('load',()=>setTimeout(tryPick,200));setTimeout(tryPick,600)}
 </script><script id="report-preview">
 (()=>{if(!/[?&]preview=report\b/.test(location.search))return;const fr=document.getElementById('wsFinder');if(!fr)return;
 const ping=()=>{try{fr.contentWindow.postMessage('mg-preview-report','*');}catch(e){}};
+fr.addEventListener('load',()=>{ping();setTimeout(ping,400);setTimeout(ping,1200);});
+setTimeout(ping,400);setTimeout(ping,1200);setTimeout(ping,2500);
+setTimeout(()=>{const t=document.getElementById('ws-finder');t&&t.scrollIntoView({block:'start'});},1600);})();
+</script><script id="report-unlock-link">
+(()=>{const m=location.search.match(/[?&]rtoken=([^&]+)/);if(!m)return;const token=decodeURIComponent(m[1]);const fr=document.getElementById('wsFinder');if(!fr)return;
+const ping=()=>{try{fr.contentWindow.postMessage({type:'mg-report-token',token:token},'*');}catch(e){}};
 fr.addEventListener('load',()=>{ping();setTimeout(ping,400);setTimeout(ping,1200);});
 setTimeout(ping,400);setTimeout(ping,1200);setTimeout(ping,2500);
 setTimeout(()=>{const t=document.getElementById('ws-finder');t&&t.scrollIntoView({block:'start'});},1600);})();

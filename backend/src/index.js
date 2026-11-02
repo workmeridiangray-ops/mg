@@ -92,6 +92,78 @@ function rateLimitedResponse(env) {
   );
 }
 
+// ---------------- Health Check report locking ----------------
+// Each Health Check submission gets a report_token, returned to the
+// frontend so it can be kept (localStorage, and emailed back as a link)
+// and later checked against this endpoint — the full report only renders
+// once a visitor with that token has also submitted a call booking (by
+// token if the frontend sent one along, or by matching email either way).
+let reportColumnsReady = false;
+
+async function ensureReportColumns(env) {
+  if (reportColumnsReady) return;
+  for (const stmt of [
+    `ALTER TABLE health_check_submissions ADD COLUMN report_token TEXT`,
+    `ALTER TABLE health_check_submissions ADD COLUMN report_unlocked INTEGER DEFAULT 0`,
+  ]) {
+    try {
+      await env.DB.prepare(stmt).run();
+    } catch (e) {
+      // "duplicate column name" once the column already exists — expected
+      // on every call after the first; anything else just gets logged.
+      if (!/duplicate column/i.test(String(e && e.message))) {
+        console.log("ensureReportColumns:", e && e.message);
+      }
+    }
+  }
+  reportColumnsReady = true;
+}
+
+async function handleReportStatus(request, env) {
+  const url = new URL(request.url);
+  const token = url.searchParams.get("token") || "";
+  if (!token) return json({ error: "token is required" }, 400, env);
+
+  await ensureReportColumns(env);
+  const row = await env.DB.prepare(`SELECT email, report_unlocked FROM health_check_submissions WHERE report_token = ?`)
+    .bind(token)
+    .first();
+  if (!row) return json({ error: "not_found" }, 404, env);
+
+  if (row.report_unlocked) return json({ ok: true, unlocked: true }, 200, env);
+
+  // Not flagged yet on this row — check whether a call has been booked
+  // under the same email since, and backfill the flag if so.
+  if (row.email) {
+    const booking = await env.DB.prepare(`SELECT id FROM call_bookings WHERE email = ? COLLATE NOCASE LIMIT 1`)
+      .bind(row.email)
+      .first();
+    if (booking) {
+      await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE report_token = ?`).bind(token).run();
+      return json({ ok: true, unlocked: true }, 200, env);
+    }
+  }
+  return json({ ok: true, unlocked: false }, 200, env);
+}
+
+// Best-effort: called after a booking is created, unlocks any Health Check
+// report(s) tied to the same email (and/or an explicit report_token the
+// frontend sent along). Never throws — a failure here must not affect the
+// booking itself.
+async function unlockReportsForBooking(env, { email, reportToken }) {
+  try {
+    await ensureReportColumns(env);
+    if (reportToken) {
+      await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE report_token = ?`).bind(reportToken).run();
+    }
+    if (email) {
+      await env.DB.prepare(`UPDATE health_check_submissions SET report_unlocked = 1 WHERE email = ? COLLATE NOCASE`).bind(email).run();
+    }
+  } catch (e) {
+    console.log("unlockReportsForBooking failed:", e && e.message);
+  }
+}
+
 // ---------------- Branded email shell ----------------
 // Wraps every email body in the site's own visual identity (same accent blue,
 // ink/mute palette and Plus Jakarta Sans font stack as meridiangray.in) so
@@ -272,13 +344,17 @@ async function handleHealthCheck(request, env) {
     turnover = "",
   } = info;
 
+  await ensureReportColumns(env);
+  const reportToken = crypto.randomUUID();
+
   await env.DB.prepare(
     `INSERT INTO health_check_submissions
       (sector, business_type, custom_label, business_name, name, role, email, phone, cc,
        website, year_established, city, region, branches, team_size, turnover,
        answers_json, answers_text, info_json,
-       score_overall, score_research, score_design, score_develop, score_automate, score_market)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+       score_overall, score_research, score_design, score_develop, score_automate, score_market,
+       report_token)
+     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
   )
     .bind(
       sector,
@@ -305,7 +381,8 @@ async function handleHealthCheck(request, env) {
       scores.design ?? null,
       scores.develop ?? null,
       scores.automate ?? null,
-      scores.market ?? null
+      scores.market ?? null,
+      reportToken
     )
     .run();
 
@@ -355,7 +432,7 @@ async function handleHealthCheck(request, env) {
     answers_text,
   });
 
-  return json({ ok: true }, 200, env);
+  return json({ ok: true, report_token: reportToken }, 200, env);
 }
 
 async function handleNewsletter(request, env) {
@@ -406,6 +483,7 @@ async function handleBookCall(request, env) {
     business_type = "",
     score_overall = null,
     info = {},
+    report_token = "",
   } = body;
 
   const { name = "", email = "", phone = "", cc = "", biz: business_name = "" } = info;
@@ -433,6 +511,10 @@ async function handleBookCall(request, env) {
   )
     .bind(name, email, phone, cc, business_name, sector, business_type, date, time, mode, notes, score_overall, "pending", actionToken)
     .run();
+
+  // Unlock any Health Check report tied to this email (and/or the explicit
+  // token the frontend sent along) — booking a call is what unlocks it.
+  await unlockReportsForBooking(env, { email, reportToken: report_token });
 
   const modeLabel = mode === "phone" ? "Phone call — we call you" : "Video call — Google Meet or Zoom";
   const niceDate = formatCallDate(date);
@@ -490,6 +572,11 @@ async function handleBookCall(request, env) {
         ${gcalUrl ? emailButton("Add to Google Calendar", gcalUrl) : ""}
         ${emailButton("Download .ics (Outlook/Apple)", icsUrl, { variant: "outline" })}
       </div>
+      ${
+        report_token
+          ? `<div style="margin-top:14px;">${emailButton("View your full report", `https://www.meridiangray.in/where-you-stand.html?rtoken=${report_token}`, { variant: "outline" })}</div>`
+          : ""
+      }
       <p style="margin-top:18px;font-size:13px;color:${BRAND.faint};">Need a different time? <a href="${rescheduleUrl}" style="color:${BRAND.blue};">Reschedule here</a>.</p>
     `,
   });
@@ -1381,6 +1468,10 @@ export default {
 
     if (request.method === "GET" && url.pathname === "/api/ics") {
       return handleIcsDownload(request, env);
+    }
+
+    if (request.method === "GET" && url.pathname === "/api/report-status") {
+      return handleReportStatus(request, env);
     }
 
     if (request.method === "GET" && url.pathname === "/oauth/start") {
