@@ -4,3 +4,5 @@ backend
 DEPLOYMENT.md
 wrangler.jsonc
 .assetsignore
+src
+.gitignore

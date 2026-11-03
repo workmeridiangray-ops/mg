@@ -1,16 +1,30 @@
 {
-	// This is a static-assets-only Worker (no Worker script) serving the
-	// Meridian Gray frontend. Without this file, Cloudflare defaults
-	// `not_found_handling` to "none", which returns an EMPTY 404 body for
-	// any URL that doesn't match a file — a blank white page for every
-	// broken link, typo, or old bookmark. "404-page" makes it serve the
-	// real 404.html instead. See:
-	// https://developers.cloudflare.com/workers/static-assets/routing/static-site-generation/
+	// Pre-launch gate: this Worker script (src/index.js) runs in front of
+	// the static site. While vars.GATE_ENABLED is "true", every request
+	// (run_worker_first) is checked for a signed session cookie; without
+	// one, visitors get a Coming Soon page with Google sign-in instead of
+	// the real site. Approved emails see the real site via the ASSETS
+	// binding below. To launch for real: flip GATE_ENABLED to "false"
+	// (here, or as a dashboard variable override) and redeploy -- no code
+	// removal needed.
+	//
+	// Secrets this Worker needs (Cloudflare dashboard -> Workers & Pages ->
+	// mg -> Settings -> Variables and Secrets -- never in this repo):
+	//   GOOGLE_CLIENT_SECRET
+	//   SESSION_SECRET  (any long random string)
 	"name": "mg",
 	"compatibility_date": "2026-11-04",
+	"main": "src/index.js",
+	"vars": {
+		"GATE_ENABLED": "true",
+		"GOOGLE_CLIENT_ID": "",
+		"ALLOWED_EMAILS": "work.meridiangray@gmail.com,mehtaambeshwar@gmail.com,ambheshwarmehta28@gmail.com"
+	},
 	"assets": {
 		"directory": ".",
+		"binding": "ASSETS",
 		"not_found_handling": "404-page",
-		"html_handling": "auto-trailing-slash"
+		"html_handling": "auto-trailing-slash",
+		"run_worker_first": true
 	}
 }
