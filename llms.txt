@@ -17,6 +17,14 @@ Meridian Gray runs a free 5-minute Business Health Check that scores a company's
 ## Insights — English
 
 - [A simple framework for deciding what to fix first in your business](https://www.meridiangray.in/blog-a-simple-framework-for-deciding-what-to-fix-first-in-your-bu.html)
+- [Business systems by sector](https://www.meridiangray.in/blog-business-systems-by-sector.html)
+- [Choosing between custom software and SaaS](https://www.meridiangray.in/blog-choosing-between-custom-software-and-saas.html)
+- [One stock figure across every channel](https://www.meridiangray.in/blog-one-stock-figure-across-every-channel.html)
+- [SEO, AEO and GEO: being found when AI gives the answer](https://www.meridiangray.in/blog-seo-aeo-and-geo-being-found-when-ai-gives-the-answer.html)
+- [The enquiry-to-reply audit](https://www.meridiangray.in/blog-the-enquiry-to-reply-audit.html)
+- [When to automate a workflow, and when to leave it alone](https://www.meridiangray.in/blog-when-to-automate-a-workflow-and-when-to-leave-it-alone.html)
+- [Where your enquiries go after someone fills in the form](https://www.meridiangray.in/blog-where-your-enquiries-go-after-someone-fills-in-the-form.html)
+- [Why your website gets visitors but not enquiries](https://www.meridiangray.in/blog-why-your-website-gets-visitors-but-not-enquiries.html)
 - [Admissions to enrollment — fixing the leaky top of the funnel](https://www.meridiangray.in/blog-admissions-to-enrollment-fixing-the-leaky-top-of-the-funnel.html)
 - [API integrations — the quiet fix behind "connected" businesses](https://www.meridiangray.in/blog-api-integrations-the-quiet-fix-behind-connected-businesses.html)
 - [Approval workflows that don't slow your team down](https://www.meridiangray.in/blog-approval-workflows-that-don-t-slow-your-team-down.html)
