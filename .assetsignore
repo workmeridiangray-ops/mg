@@ -1,0 +1,6 @@
+backend
+.github
+.git
+DEPLOYMENT.md
+wrangler.jsonc
+.assetsignore

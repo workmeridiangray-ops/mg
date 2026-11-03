@@ -1,0 +1,16 @@
+{
+	// This is a static-assets-only Worker (no Worker script) serving the
+	// Meridian Gray frontend. Without this file, Cloudflare defaults
+	// `not_found_handling` to "none", which returns an EMPTY 404 body for
+	// any URL that doesn't match a file — a blank white page for every
+	// broken link, typo, or old bookmark. "404-page" makes it serve the
+	// real 404.html instead. See:
+	// https://developers.cloudflare.com/workers/static-assets/routing/static-site-generation/
+	"name": "mg",
+	"compatibility_date": "2026-11-04",
+	"assets": {
+		"directory": ".",
+		"not_found_handling": "404-page",
+		"html_handling": "auto-trailing-slash"
+	}
+}
