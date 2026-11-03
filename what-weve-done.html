@@ -4920,7 +4920,7 @@ function R(b){switch(b.t){
  case 'ol':return `<ol class="csb-ol" style="counter-reset:ol ${(b.start||1)-1}">${b.items.map(x=>`<li>${x}</li>`).join('')}</ol>`;
  case 'stat':return `<ul class="csb-statl">${b.items.map(x=>`<li><b>${x[0]}</b><span>${x[1]}</span></li>`).join('')}</ul>`;
  case 'tbl':return `<div class="${b.cls||''}"><div class="csb-tbl" role="table"><div class="csb-tr2 csb-th" role="row">${b.cols.map(c=>`<span role="columnheader">${c}</span>`).join('')}</div>${b.rows.map(r=>`<div class="csb-tr2" role="row">${r.map(c=>`<span role="cell">${c}</span>`).join('')}</div>`).join('')}</div></div>`;
- case 'compare':return `<div class="csb-compare"><figure><img src="${b.before}" alt="${(b.beforeAlt||'Before').replace(/"/g,'&quot;')}" loading="lazy"><figcaption><b>Before</b>${b.beforeLabel?' · '+b.beforeLabel:''}</figcaption></figure><figure><img src="${b.after}" alt="${(b.afterAlt||'After').replace(/"/g,'&quot;')}" loading="lazy"><figcaption><b>After</b>${b.afterLabel?' · '+b.afterLabel:''}</figcaption></figure>${b.x?`<p class="csb-compare-cap">${b.x}</p>`:''}</div>`;
+ case 'compare':return `<div class="csb-compare"><figure><img src="${b.before}" alt="${(b.beforeAlt||'Before').replace(/"/g,'&quot;')}"><figcaption><b>Before</b>${b.beforeLabel?' · '+b.beforeLabel:''}</figcaption></figure><figure><img src="${b.after}" alt="${(b.afterAlt||'After').replace(/"/g,'&quot;')}"><figcaption><b>After</b>${b.afterLabel?' · '+b.afterLabel:''}</figcaption></figure>${b.x?`<p class="csb-compare-cap">${b.x}</p>`:''}</div>`;
 }return ''}
 const LIST={ul:'items',ol:'items',stat:'items',tbl:'rows'};
 function part(b,n0,n1){const c=Object.assign({},b);c[LIST[b.t]]=b[LIST[b.t]].slice(n0,n1);if(b.t==='ol')c.start=(b.start||1)+n0;return c}
