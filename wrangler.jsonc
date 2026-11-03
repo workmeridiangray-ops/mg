@@ -13,7 +13,7 @@
 	//   GOOGLE_CLIENT_SECRET
 	//   SESSION_SECRET  (any long random string)
 	"name": "mg",
-	"compatibility_date": "2026-11-04",
+	"compatibility_date": "2026-11-03",
 	"main": "src/index.js",
 	"vars": {
 		"GATE_ENABLED": "true",
