@@ -4968,6 +4968,9 @@ let rt;addEventListener('resize',()=>{if(!d.open)return;clearTimeout(rt);rt=setT
 /* open a case study directly from a link such as index.html#cs-printingz */
 (()=>{function openFromHash(){const id=location.hash.slice(1);if(!/^cs-/.test(id))return;const d=document.getElementById(id);if(!d||d.open)return;const c=document.getElementById('clients');if(c)c.scrollIntoView();setTimeout(()=>{d.showModal();document.documentElement.classList.add('cs-lock')},350)}
 addEventListener('load',()=>setTimeout(openFromHash,900));addEventListener('hashchange',openFromHash)})();
+(()=>{const sl=n=>n.toLowerCase().replace(/&/g,'').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+function openProd(){const m=/^#p-(.+)$/.exec(location.hash);if(!m)return;const r=[...document.querySelectorAll('#s5List .s5-row')].find(x=>sl(x.querySelector('.t').firstChild.textContent)===m[1]);if(!r)return;const sec=document.getElementById('work');if(sec)sec.scrollIntoView();if(r)setTimeout(()=>r.click(),500)}
+addEventListener('load',()=>setTimeout(openProd,900));addEventListener('hashchange',openProd)})();
 </script>
 <script>
 (()=>{const sec=document.getElementById('ab-time');if(!sec)return;const li=[...sec.querySelectorAll('.ab-day li')],line=sec.querySelector('.ab-day-line b'),end=sec.querySelector('.ab-time-end');
