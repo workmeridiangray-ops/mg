@@ -3017,13 +3017,15 @@ main.stv .ab-time-stick{align-items:start!important;align-content:start;padding-
 <section class="pb" id="ab-top" aria-labelledby="abH" style="--pb-img:url('assets/banners/about.jpg')">
   <div class="pb-in wrap">
     <nav class="pb-crumb" aria-label="Breadcrumb"><a href="index.html">Home</a><span aria-hidden="true">/</span><span aria-current="page">Who We Are</span></nav>
-    <div class="pb-main">
-      <p class="pb-eyebrow">Our Story</p>
-      <h1 id="abH" class="pb-h">Systems that <em>work in the real world.</em></h1>
-      <p class="pb-lead">Two founders, five disciplines and one way of working: business thinking, design, development and automation, built around how you actually run.</p>
-      <a class="pb-cta" href="#ab-time"><span>Read Our Story</span><i aria-hidden="true">↓</i></a>
+    <div class="pb-grid">
+      <div class="pb-main">
+        <p class="pb-eyebrow">Our Story</p>
+        <h1 id="abH" class="pb-h">Systems that <em>work in the real world.</em></h1>
+        <p class="pb-lead">Two founders, five disciplines and one way of working: business thinking, design, development and automation, built around how you actually run.</p>
+        <a class="pb-cta" href="#ab-time"><span>Read Our Story</span><i aria-hidden="true">↓</i></a>
+      </div>
+      <figure class="pb-fig"><img src="assets/banners/about-side.jpg" alt="Website, CRM, orders, billing, inventory and reports connected into one system" width="1200" height="1500" fetchpriority="high"></figure>
     </div>
-    <ul class="pb-facts" aria-label="At a glance"><li><b>Kolkata</b><span>Where we are founded</span></li><li><b>2</b><span>Founders on every project</span></li><li><b>5</b><span>Disciplines, one team</span></li></ul>
   </div>
 </section>
 
@@ -4092,18 +4094,16 @@ addEventListener('load',find);find();
 .pb-in{display:flex;flex-direction:column;width:100%;padding-top:28px;padding-bottom:0}
 .pb-crumb{display:flex;gap:12px;align-items:center;font-size:13px;color:rgba(255,255,255,.65);padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.2)}
 .pb-crumb a{color:inherit;text-decoration:none}.pb-crumb a:hover{color:#fff}.pb-crumb [aria-current]{color:#fff;font-weight:500}
-.pb-main{padding-top:clamp(36px,7vh,84px);max-width:860px}
+.pb-grid{flex:1;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:clamp(28px,4vw,72px);align-items:stretch;padding:clamp(28px,5vh,56px) 0 clamp(28px,5vh,56px)}
+.pb-main{align-self:start;max-width:860px}
+.pb-fig{margin:0;min-height:0;position:relative;box-shadow:0 30px 70px -20px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.14)}
+.pb-fig img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .pb-eyebrow{margin:0 0 18px;font:500 13px var(--sans,inherit);letter-spacing:.14em;text-transform:uppercase;color:#aab4ff}
-html body .pb h1.pb-h:not(#_),html body .pb h1.pb-h:not(#_) *:not(#_2){margin:0;font-weight:500;font-size:clamp(44px,6.6vw,104px)!important;line-height:1.02!important;text-align:left!important;letter-spacing:-.045em!important;font-weight:500!important;max-width:11em}
+html body .pb h1.pb-h:not(#_),html body .pb h1.pb-h:not(#_) *:not(#_2){margin:0;font-weight:500;font-size:clamp(40px,5.6vw,92px)!important;line-height:1.02!important;text-align:left!important;letter-spacing:-.045em!important;font-weight:500!important;max-width:9em}
 html body .pb h1.pb-h:not(#_){color:#fff}html body .pb h1.pb-h:not(#_) em:not(#_2){color:#aab4ff}
 .pb-h em{font-style:normal;color:#aab4ff}
 html body .pb p.pb-lead{text-align:left!important;margin:28px 0 0;max-width:560px;font-size:clamp(16px,1.35vw,20px);line-height:1.5;color:rgba(255,255,255,.82)}
 .pb-cta{display:inline-flex;align-items:center;gap:18px;margin-top:34px;padding:17px 26px;background:#244BDB;color:#fff;font-weight:600;font-size:15px;text-decoration:none;transition:background .25s}
 .pb-cta:hover{background:#fff;color:#111}.pb-cta i{font-style:normal}
-.pb-facts{list-style:none;margin:auto 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);border-top:1px solid rgba(255,255,255,.2)}
-.pb-facts li{padding:22px 24px 26px 0;display:flex;flex-direction:column;gap:4px}
-.pb-facts li+li{padding-left:24px;border-left:1px solid rgba(255,255,255,.2)}
-.pb-facts b{font-weight:500;font-size:clamp(24px,2.4vw,36px);letter-spacing:-.03em}
-.pb-facts span{font-size:13px;color:rgba(255,255,255,.65)}
-@media (max-width:700px){.pb{min-height:0}.pb-main{padding-block:44px 40px}.pb-facts{grid-template-columns:1fr}.pb-facts li,.pb-facts li+li{padding:16px 0;border-left:0;border-top:1px solid rgba(255,255,255,.2)}.pb-facts li:first-child{border-top:0}}
+@media (max-width:900px){.pb{min-height:0}.pb-grid{grid-template-columns:1fr}.pb-fig{aspect-ratio:4/5;max-width:520px}}
 </style>
