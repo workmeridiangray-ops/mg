@@ -6138,6 +6138,14 @@ render();
 
 </section>
 
+<style id="wsx-steps-grid">
+/* "What your diagnosis actually contains": three equal columns; the final card spans the last row. */
+@media (min-width:641px){
+html body .wsx-how[aria-labelledby="wsxReport"] .wsx-steps{grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(2,1fr) auto;gap:16px}
+html body .wsx-how[aria-labelledby="wsxReport"] .wsx-steps li{padding:26px 24px 28px}
+html body .wsx-how[aria-labelledby="wsxReport"] .wsx-steps li:last-child{grid-column:1/-1}
+}
+</style>
 <section class="wsx-how wrap" aria-labelledby="wsxReport">
   <div class="wsx-sh"><span class="sv-ch">Your Report</span><h2 id="wsxReport" class="svc-h">What your diagnosis <em>actually contains.</em></h2></div>
   <ol class="wsx-steps">
