@@ -4407,6 +4407,14 @@ html body .mg-cb .ab-crumb{margin:0!important}
 html body .mg-full{padding-top:clamp(90px,12vh,120px)!important}
 @media (max-width:900px){html body .mg-full>.mg-cb{position:static!important;margin-bottom:28px!important}html body .mg-full{padding-top:24px!important}}
 </style>
+<style id="mg-top">
+/* Banner content starts directly below the navigation/breadcrumb instead of being vertically centred in a full-height hero. */
+html body .mg-full.mg-full{min-height:0!important;justify-content:flex-start!important}
+html body .mg-full.st-open2:not(.ws-open),html body .mg-full.sv-hero2{align-items:start!important;align-content:start!important}
+html body .mg-full .st-open2-media,html body #ab-top .st-open2-media{margin-top:0!important;align-self:start!important}
+html body .mg-full .st-open2-grid{padding-top:0!important}
+html body .mg-full .wsx-hero{padding-top:0!important;align-items:start!important}
+</style>
 
 <style id="wt-compact">
 /* What We Think · compact layout */
