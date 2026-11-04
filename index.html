@@ -679,6 +679,7 @@ html.locked body{overflow:hidden}
 #svc-title em{color:var(--aub);font-style:italic;background:linear-gradient(transparent 70%,var(--aub-wash) 70%);padding:0 .08em}
 /* dark panels: lift the aubergine accent so labels stay readable on black */
 .services .xp{--aub:#244BDB}
+.services .xp:not(.on){background:var(--aub-wash);border-color:#D3DCF8}.services .xp:not(.on):hover{background:#E1E8FB}.services .xp:not(.on) .xp-tab .t{color:var(--ink)}.services .xp:not(.on) .xp-tab .plus{color:var(--aub)}
 .services .xp:not(.on){--aub:#244BDB}
 @media (min-width:861px) and (min-height:621px){.services .xp-stick{top:calc(var(--hh) + env(safe-area-inset-top,0px));height:calc(100vh - var(--hh));height:calc(100svh - var(--hh) - env(safe-area-inset-top,0px));padding-top:24px!important}}
 .services{border-bottom:1px solid var(--line)}
