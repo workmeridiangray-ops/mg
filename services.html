@@ -3232,6 +3232,19 @@ T.forEach(x=>x.addEventListener('click',e=>{if(e.isTrusted){si=0;const nb=panel(
 new IntersectionObserver(es=>{vis=es[0].isIntersecting;if(vis&&!r.classList.contains('auto')){si=0;const b=panel()&&panel().querySelector('.svd-svc');b&&b.click();restartBar()}},{threshold:.35}).observe(r);
 start()})();
 </script>
+<style id="sva-align">
+/* Business Assessment: both columns share the same top and bottom edge. */
+@media (min-width:861px){
+html body .sva{align-items:stretch}
+html body .sva-l{display:flex;flex-direction:column}
+html body .sva-l .sva-tag{margin:18px 0 0}
+html body .sva-l .sv-ring{margin-top:auto;align-self:flex-start}
+html body .sva-l .sva-tag{margin-bottom:26px}
+html body .sva-r{display:flex;flex-direction:column}
+html body .sva-r .sva-list{flex:1;display:flex;flex-direction:column}
+html body .sva-r .sva-list li{flex:1 1 0;align-items:center}
+}
+</style>
 <!-- ===== CHAPTER 05 · BUSINESS ASSESSMENT ===== -->
 <section class="svc-block wrap" id="sv-assessment" aria-labelledby="svAsH">
   <div class="sva">
@@ -3241,6 +3254,7 @@ start()})();
       <p class="sva-b">Before deciding what your business needs, understand where it stands today.</p>
       <p class="ab-p">Every business has strengths, weaknesses and opportunities that may not be immediately obvious. Your digital presence may be strong while your internal processes need improvement. Your marketing may generate leads while your customer management system struggles to handle them.</p>
       <p class="ab-p">Our business assessment helps you look at these areas together. Discover what is working, where gaps exist and which improvements deserve attention.</p>
+      <p class="sva-tag">Understand your current position. Identify what is missing. Discover your next move.</p>
       <a class="sv-ring" href="where-you-stand.html#ws-finder">
         <span class="sv-ring-btn" aria-hidden="true">
           <svg class="fk-ring" viewBox="0 0 200 200"><defs><path id="svRgC" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs><text><textPath href="#svRgC">EVALUATE YOUR BUSINESS · 5-MINUTE HEALTH CHECK · </textPath></text></svg>
@@ -3248,7 +3262,6 @@ start()})();
         </span>
         <span class="sv-ring-t"><b>Evaluate Your Business</b>5-minute health check</span>
       </a>
-      <p class="sva-tag">Understand your current position. Identify what is missing. Discover your next move.</p>
     </div>
     <div class="sva-r">
       <span class="svd-k">Evaluate your business across key areas such as:</span>
