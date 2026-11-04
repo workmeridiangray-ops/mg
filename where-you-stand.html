@@ -5707,8 +5707,8 @@ function profileErrors(){var i=S.info||{},e={};
   if(!i.model)e.model='Choose who you sell to.';
   return e;}
 function infoErrors(){var a=detailErrors(),b=profileErrors();for(var k in b)a[k]=b[k];return a;}
-function detailsOk(){return !LOCK||Object.keys(detailErrors()).length===0;}
-function profileOk(){return !LOCK||Object.keys(profileErrors()).length===0;}
+function detailsOk(){return Object.keys(detailErrors()).length===0;}
+function profileOk(){return Object.keys(profileErrors()).length===0;}
 function infoOk(){return detailsOk()&amp;&amp;profileOk();}
 function fld(k,label,opt,html){return '&lt;div class=&quot;fd&quot; data-fd=&quot;'+k+'&quot;&gt;&lt;label for=&quot;info-'+k+'&quot;&gt;'+label+(opt?' &lt;em&gt;(optional)&lt;/em&gt;':'')+'&lt;/label&gt;'+html+'&lt;small class=&quot;fe&quot; id=&quot;fe-'+k+'&quot; role=&quot;alert&quot;&gt;&lt;/small&gt;&lt;/div&gt;';}
 function chips(k,list){var i=S.info||{};return '&lt;div class=&quot;chips-in&quot; role=&quot;radiogroup&quot; aria-labelledby=&quot;lb-'+k+'&quot;&gt;'+list.map(function(o){var on=i[k]===o;return '&lt;button type=&quot;button&quot; class=&quot;opt&quot; role=&quot;radio&quot; aria-checked=&quot;'+on+'&quot; aria-pressed=&quot;'+on+'&quot; data-chip=&quot;'+k+'&quot; data-val=&quot;'+esc(o)+'&quot;&gt;'+esc(o)+'&lt;/button&gt;';}).join('')+'&lt;/div&gt;';}
@@ -5776,7 +5776,7 @@ function profileHTML(){var i=S.info||{},v=function(k){return esc(i[k]||'');};
    +fld('team','Team size',1,sel('team',TEAMS))
    +fld('turnover','Annual turnover',1,sel('turnover',TURNOVER))
    +'&lt;/div&gt;&lt;/section&gt;';}
-function infoShow(){if(!LOCK)return true;var e=infoErrors(),first=null;Object.keys({name:1,email:1,phone:1,wa:1,role:1,biz:1,web:1,year:1,city:1,region:1,branches:1,model:1,team:1,turnover:1}).forEach(function(k){var f=app.querySelector('[data-fd=&quot;'+k+'&quot;]'),m=document.getElementById('fe-'+k);if(!f)return;var bad=!!e[k];f.classList.toggle('err',bad);if(m)m.textContent=e[k]||'';if(bad&amp;&amp;!first)first=k;});if(first){var el=document.getElementById('info-'+first)||app.querySelector('[data-fd=&quot;'+first+'&quot;] button');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){el.focus({preventScroll:true});},350);}}return !first;}
+function infoShow(){var e=infoErrors(),first=null;Object.keys({name:1,email:1,phone:1,wa:1,role:1,biz:1,web:1,year:1,city:1,region:1,branches:1,model:1,team:1,turnover:1}).forEach(function(k){var f=app.querySelector('[data-fd=&quot;'+k+'&quot;]'),m=document.getElementById('fe-'+k);if(!f)return;var bad=!!e[k];f.classList.toggle('err',bad);if(m)m.textContent=e[k]||'';if(bad&amp;&amp;!first)first=k;});if(first){var el=document.getElementById('info-'+first)||app.querySelector('[data-fd=&quot;'+first+'&quot;] button');if(el){el.scrollIntoView({behavior:'smooth',block:'center'});setTimeout(function(){el.focus({preventScroll:true});},350);}}return !first;}
 
 
 function compute(){
@@ -5982,7 +5982,7 @@ app.addEventListener('click',function(e){
   var t=e.target.closest('[data-jumpq],[data-sub],[data-go],[data-browse],[data-pick],[data-jump],[data-custom],[data-ind],[data-type],[data-clear],[data-q],[data-mod],[data-filter],[data-unlock],#copy,#restart');if(!t||t.disabled)return;
   if(t.dataset.unlock){S.unlockIntent=1;persist();return go(5);}
   if(t.dataset.sub){var ord=['info','q'],to=t.dataset.sub,fwd=ord.indexOf(to)&gt;ord.indexOf(S.sub||'info');if(fwd&amp;&amp;!infoShow())return;S.subDir=fwd?'fwd':'back';S.sub=to;S.anim2=1;render();S.anim2=0;window.scrollTo({top:0,behavior:'smooth'});return;}
-  if(t.dataset.go&amp;&amp;S.step===2&amp;&amp;+t.dataset.go&gt;2&amp;&amp;!infoOk()){render();infoShow();return;}
+  if(t.dataset.go&amp;&amp;+t.dataset.go&gt;2&amp;&amp;S.step&lt;=2&amp;&amp;!infoOk()){if(S.step!==2)return go(2);render();infoShow();return;}
   if(t.dataset.go) return go(+t.dataset.go);
   if(t.dataset.browse){var y0=window.scrollY;S.browse=t.dataset.browse;render();window.scrollTo(0,y0);var tb=app.querySelector('.pm-cell[data-browse=&quot;'+S.browse+'&quot;]')||app.querySelector('[data-browse=&quot;'+S.browse+'&quot;]');if(tb)tb.focus({preventScroll:true});var pp=document.getElementById('pmpanel');if(pp)pp.scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(t.dataset.pick){var pk=t.dataset.pick.split(':');if(S.ind!==pk[0]){S.mods=[];}if(S.ind!==pk[0]||S.type!==pk[1]){S.ov={};}S.ind=pk[0];S.type=pk[1];S.custom='';S.browse=pk[0];if(t.dataset.next)return go(2);
