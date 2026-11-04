@@ -3640,6 +3640,22 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 </section>
 
 <!-- 03 Blogs -->
+<style id="wt-more-css">
+/* Latest articles: 5 columns x 2 rows on desktop (10 cards), the rest behind "View more". */
+html body .wt-blogs{grid-template-columns:repeat(5,minmax(0,1fr))}
+@media (max-width:1179px){html body .wt-blogs{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:560px){html body .wt-blogs{grid-template-columns:minmax(0,1fr)}}
+html body .wt-blogs>.wt-b.wt-x{display:none!important}
+html body .wt-blogs>.wt-b:not(.wt-x){display:flex;flex-direction:column}
+html body .wt-blogs>.wt-b .wt-sc-go{margin-top:auto}
+.wt-more-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:clamp(24px,3vw,36px)}
+.wt-more{display:inline-flex;align-items:center;gap:12px;min-height:50px;padding:0 26px;background:#fff;color:var(--ink);border:1px solid var(--ink);border-radius:0;font:600 15px var(--sans);cursor:pointer;transition:background .25s,color .25s,border-color .25s}
+.wt-more i{font-style:normal;transition:transform .3s}
+.wt-more:hover{background:var(--aub);border-color:var(--aub);color:#fff}
+.wt-more:hover i{transform:translateY(2px)}
+.wt-more:focus-visible{outline:2px solid var(--aub);outline-offset:3px}
+.wt-more-n{font-size:12.5px;color:var(--mute)}
+</style>
 <section class="wrap s5-sec" id="blogs" aria-labelledby="wtB" style="scroll-margin-top:calc(var(--hh) + 16px)">
   <div class="s5-lt"><div><span class="s5-k rv"><b>03</b> Our blogs</span><h2 id="wtB" class="s5-h2 rv">Latest <em>articles.</em></h2></div><p class="s5-side rv">Short, practical reads on the problems we see most often.</p></div>
   <div class="wt-blogs">
@@ -3815,6 +3831,28 @@ f.addEventListener('submit',async ev=>{ev.preventDefault();const v=e.value.trim(
  m.className='wt-fm ok';m.textContent='Thanks! Your email app should open to confirm. If it doesn’t, write to info@meridiangray.in.';f.reset()});
 const io=new IntersectionObserver(es=>es.forEach(en=>{if(en.isIntersecting){en.target.classList.add('on');io.unobserve(en.target)}}),{rootMargin:'0px 0px -10% 0px'});
 document.querySelectorAll('.wt .rv').forEach((el,k)=>{el.style.transitionDelay=(el.parentNode.classList.contains('wt-blogs')||el.parentNode.classList.contains('wt-rep')||el.parentNode.classList.contains('wt-per')?[...el.parentNode.children].indexOf(el)*90:0)+'ms';io.observe(el)});
+})();
+</script>
+<script>
+/* View more: show 10 articles first, reveal 10 more per click. Without JavaScript every article stays visible. */
+(function(){
+  var g=document.querySelector('.wt-blogs');if(!g)return;
+  var cards=[].slice.call(g.querySelectorAll(':scope > .wt-b')),STEP=10,shown=STEP;
+  if(cards.length<=STEP)return;
+  var wrap=document.createElement('div');wrap.className='wt-more-wrap';
+  var btn=document.createElement('button');btn.type='button';btn.className='wt-more';btn.setAttribute('aria-controls','wt-blogs-grid');
+  btn.innerHTML='View more articles <i aria-hidden="true">\u2193</i>';
+  var note=document.createElement('span');note.className='wt-more-n';note.setAttribute('aria-live','polite');
+  g.id='wt-blogs-grid';wrap.appendChild(btn);wrap.appendChild(note);g.parentNode.insertBefore(wrap,g.nextSibling);
+  function paint(){cards.forEach(function(c,i){c.classList.toggle('wt-x',i>=shown)});
+    note.textContent='Showing '+Math.min(shown,cards.length)+' of '+cards.length+' articles';
+    if(shown>=cards.length)wrap.style.display='none'}
+  btn.addEventListener('click',function(){
+    var from=shown;shown=Math.min(shown+STEP,cards.length);paint();
+    cards.slice(from,shown).forEach(function(c,k){c.style.transitionDelay=(k*50)+'ms';requestAnimationFrame(function(){c.classList.add('on')})});
+    var first=cards[from];if(first){var a=first;a.setAttribute('tabindex','-1');a.focus({preventScroll:true});a.removeAttribute('tabindex')}
+  });
+  paint();
 })();
 </script>
 </main>
