@@ -966,7 +966,16 @@ nav a:not(.pill):hover::after{transform:scaleX(1);transform-origin:left}
 .wimg svg text{fill:#676B76;font:500 11px var(--sans);letter-spacing:.2em}
 .wimg .kick{position:absolute;left:24px;top:22px;font:400 10px var(--wmono);text-transform:uppercase;letter-spacing:.06em;color:#383B43;display:flex;gap:10px;align-items:center}
 .wimg .kick::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--aub)}
-.wimg .wcover{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}.wimg:hover .wcover{transform:scale(1.04)}.wimg:has(.wcover)::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,0) 55%,rgba(0,0,0,.35));pointer-events:none}.wimg:has(.wcover) .kick,.wimg:has(.wcover) .big{color:#fff;z-index:2}.wimg:has(.wcover) .kick::before{background:#fff}
+.wimg .wfr{position:absolute;left:24px;right:24px;top:50px;bottom:84px;border-radius:8px;overflow:hidden;background:#fff;box-shadow:0 18px 40px -14px rgba(13,14,17,.35),0 0 0 1px rgba(13,14,17,.12);display:flex;flex-direction:column;z-index:1;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.wimg:hover .wfr{transform:translateY(-4px)}
+.wfr .wtb{flex:none;height:26px;background:#E9EAEE;display:flex;align-items:center;gap:6px;padding:0 10px;border-bottom:1px solid rgba(13,14,17,.1)}
+.wfr .wtb em{flex:none;position:static;display:block;width:8px;height:8px;border-radius:50%;background:#C9CBD2}.wfr .wtb em:nth-child(1){background:#FF6159}.wfr .wtb em:nth-child(2){background:#FFBD2E}.wfr .wtb em:nth-child(3){background:#27C93F}
+.wfr .wtb b{display:block;position:static;margin-left:10px;flex:1;max-width:60%;height:14px;border-radius:7px;background:#fff;font:400 8px/14px var(--wmono);color:#676B76;padding:0 10px;overflow:hidden;white-space:nowrap;text-transform:none;letter-spacing:0}
+.wfr .wcover{flex:1;min-height:0;width:100%;object-fit:cover;object-position:top;display:block}
+.wfr .mk{flex:1;min-height:0;display:grid;grid-template-columns:22% 1fr;background:#F7F8FA}
+.wfr .mk .sd{background:var(--a);padding:14px 10px;display:flex;flex-direction:column;gap:8px}.wfr .mk .sd i{height:7px;border-radius:4px;background:rgba(255,255,255,.55)}.wfr .mk .sd i:first-child{background:#fff;width:70%;margin-bottom:6px}
+.wfr .mk .mn{padding:14px;display:flex;flex-direction:column;gap:12px;min-width:0}.wfr .mk .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.wfr .mk .kp i{height:38px;border-radius:6px;background:#fff;box-shadow:0 0 0 1px rgba(13,14,17,.08);border-top:3px solid var(--a)}
+.wfr .mk .ch{flex:1;border-radius:6px;background:#fff;box-shadow:0 0 0 1px rgba(13,14,17,.08);display:flex;align-items:flex-end;gap:6%;padding:12px 14px}.wfr .mk .ch i{flex:1;border-radius:3px 3px 0 0;background:var(--a);opacity:.85}
 .wimg .badge{left:auto;right:16px;top:16px;letter-spacing:.14em;font-size:9px}
 .wimg .big{position:absolute;left:24px;right:24px;bottom:16px;font-family:var(--wfont);font-weight:400;font-size:clamp(28px,3.1vw,50px);letter-spacing:-.045em;line-height:1;color:#0d0e11;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .wmeta{margin-top:24px;display:flex;flex-direction:column;gap:16px}
@@ -3618,6 +3627,10 @@ const WORK=[
  {href:'what-weve-done.html#p-inventory-reorder-dashboard',title:'Inventory & Reorder',big:'Stock That Reorders Itself.',kick:'Tool · Wholesale',desc:'A dashboard showing live stock levels with reorder alerts, so best-sellers are replenished before they run out.',chain:['Stock','Alert','Reorder','Receive'],m:[['1','Focused tool'],['Live','Stock levels'],['Auto','Reorder alerts']]}];
 const ARW='<svg viewBox="0 0 10 9" aria-hidden="true"><path d="M5.47372 8.652V6.552L8.32972 3.752V4.9L5.47372 2.1V0L9.32372 3.836V4.816L5.47372 8.652ZM0 5.11V3.542H8.60972V5.11H0Z"/></svg>';
 function wbtnHTML(label){return`<span class="ul" aria-hidden="true"></span><span class="ar l" aria-hidden="true">${ARW}</span><span class="wd" aria-hidden="true">${[...label].map((c,i)=>`<span style="--i:${i}">${c===' '?' ':c}</span>`).join('')}</span><span class="ar r" aria-hidden="true">${ARW}</span>`}
+const W_AC=['#244BDB','#0E9F6E','#E8590C','#7C3AED','#0891B2','#DB2777','#B45309','#DC2626'];
+function wFrame(c,i){const a=W_AC[i%W_AC.length],u=(c.title||'').toLowerCase().replace(/[^a-z0-9]+/g,'')+'.app';
+  const body=c.img?`<img class="wcover" src="${c.img}" alt="" loading="lazy">`:`<div class="mk" style="--a:${a}"><div class="sd"><i></i><i></i><i></i><i></i><i></i></div><div class="mn"><div class="kp"><i></i><i></i><i></i></div><div class="ch">${[45,70,52,86,64,92,74].map(h=>`<i style="height:${h}%"></i>`).join('')}</div></div></div>`;
+  return`<div class="wfr" aria-hidden="true"><div class="wtb"><em></em><em></em><em></em><b>${u}</b></div>${body}</div>`}
 function chainSvg(ch,seed){
   const w=670,h=460,n=ch.length,pts=ch.map((c,i)=>[120+i*(w-240)/(n-1),210+Math.sin(i*1.7+seed)*58]);
   let d='';for(let i=1;i<n;i++){const a=pts[i-1],b=pts[i],mx=(a[0]+b[0])/2;d+=(i===1?`M${a[0]},${a[1]} `:'')+`C${mx},${a[1]} ${mx},${b[1]} ${b[0]},${b[1]} `}
@@ -3627,7 +3640,7 @@ function chainSvg(ch,seed){
 }
 const wSec=document.getElementById('work'),wLayer=wSec.querySelector('.work-layer'),wTrack=document.getElementById('work-track'),wTitle=wSec.querySelector('.wtitle');
 wTrack.insertAdjacentHTML('beforeend',WORK.map((c,i)=>`<div class="wpanel wcard"><span class="wline" style="--ld:${(i*.1).toFixed(1)}s"></span><div class="winner"><div class="wcard-in">
-  <a class="wimg" href="${c.cs?'#'+c.cs:c.href}" ${c.cs?`data-cs="${c.cs}"`:''} aria-label="${c.title}: ${c.cs?'read the case study':'see the product'}">${c.img?`<img class="wcover" src="${c.img}" alt="" loading="lazy">`:chainSvg(c.chain,i)}<span class="kick">${c.kick}</span><span class="big" aria-hidden="true">${c.big}</span></a>
+  <a class="wimg" href="${c.cs?'#'+c.cs:c.href}" ${c.cs?`data-cs="${c.cs}"`:''} aria-label="${c.title}: ${c.cs?'read the case study':'see the product'}">${wFrame(c,i)}<span class="kick">${c.kick}</span><span class="big" aria-hidden="true">${c.big}</span></a>
   <div class="wmeta"><h3>${c.title}</h3><div class="wrow"><p>${c.desc}</p><a class="wgo" href="${c.cs?'#'+c.cs:c.href}" ${c.cs?`data-cs="${c.cs}"`:''}>${c.cs?'Read the Case Study':'See the Product'}<svg viewBox="0 0 12 10" aria-hidden="true"><path d="M1 5h9M6.5 1.5 10 5l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></a></div></div>
 </div></div></div>`).join('')+`<div class="wpanel wcard wend"><span class="wline" style="--ld:${(WORK.length*.1).toFixed(1)}s"></span><div class="winner"><div class="wcard-in">
   <h3>Have a requirement in mind? Let’s turn it into a solution.</h3>
