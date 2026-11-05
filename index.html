@@ -43,14 +43,25 @@ html body .sv-clgrid{margin-left:0!important;margin-right:0!important}
 html body .ts-band{min-height:clamp(320px,28vw,420px);padding:clamp(48px,5vw,80px) clamp(24px,3vw,48px)!important;background:#fff!important;border:1px solid var(--line);gap:clamp(24px,3vw,56px)!important}
 html body .ts-slide{grid-template-columns:minmax(0,1fr) minmax(0,2fr)!important}
 html body .ts-txt b{white-space:nowrap}
+/* client quote */
+.cq{display:grid;grid-template-columns:minmax(220px,300px) 1fr;margin:0;background:#fff;border:1px solid var(--line);border-top:3px solid var(--aub,#244BDB)}
+.cq-side{display:flex;flex-direction:column;align-items:center;text-align:center;gap:14px;padding:clamp(28px,3vw,44px) 24px;background:#F6F8FD;border-right:1px solid var(--line)}
+.cq-photo{position:relative;width:150px;height:150px;border-radius:50%;overflow:hidden;background:#E3E9FB;border:4px solid #fff;box-shadow:0 0 0 1px #D3DCF8,0 14px 30px -14px rgba(15,29,82,.45);display:grid;place-items:center}
+.cq-photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cq-photo .cq-ini{font-size:56px;letter-spacing:0;text-transform:none;font-weight:600;color:var(--aub,#244BDB)}
+.cq-side figcaption{display:flex;flex-direction:column;gap:3px}
+.cq-side b{font-size:20px;font-weight:600;color:var(--ink)}
+.cq-side span{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+.cq-side em{font-style:normal;font-size:15px;font-weight:600;color:var(--aub,#244BDB)}
+.cq-stars{color:#E0A100;letter-spacing:3px;font-size:16px}
+.cq-body{position:relative;margin:0;padding:clamp(28px,4vw,56px) clamp(24px,4.5vw,64px);display:flex;flex-direction:column;justify-content:center}
+.cq-mark{width:44px;height:33px;color:var(--aub,#244BDB);opacity:.85;margin-bottom:20px}
+.cq-body p{text-align:left;margin:0 0 .9em;font-family:'Lora',Georgia,serif;font-style:italic;font-size:clamp(17px,1.4vw,21px);line-height:1.7;color:var(--ink);max-width:62ch}
+.cq-body p:last-child{margin:0}
+@media(max-width:760px){.cq{grid-template-columns:1fr}.cq-side{border-right:0;border-bottom:1px solid var(--line)}}
 html body .ts-body{min-height:clamp(180px,16vw,240px)!important;padding-left:clamp(32px,4vw,64px)!important;border-left-color:var(--line)!important}
 html body .ts-body .tm-q{width:48px!important;height:36px!important;color:var(--aub)!important;opacity:.85;margin-bottom:24px!important}
 html body .ts-quote{font-size:clamp(20px,1.8vw,28px)!important;line-height:1.45!important;letter-spacing:-.015em;font-weight:500;color:var(--ink)!important;max-width:38ch!important}
-html body .ts-long .ts-quote{font-family:'Lora',Georgia,'Times New Roman',serif!important;font-style:italic!important;font-weight:400!important;font-size:clamp(18px,1.5vw,22px)!important;line-height:1.7!important;max-width:60ch!important;letter-spacing:0!important;color:var(--ink)!important;text-align:left!important}
-html body .ts-long .ts-quote p{margin:0 0 .9em}
-html body .ts-long .ts-quote{font-size:clamp(16px,1.25vw,19px)!important;line-height:1.65!important;max-width:78ch!important;font-weight:500}
-html body .ts-long .ts-quote p{margin:0 0 .85em}html body .ts-long .ts-quote p:last-child{margin:0}
-html body .ts-long .tm-q{margin-bottom:16px!important}
 html body .ts-av{width:clamp(72px,6.5vw,96px)!important;height:clamp(72px,6.5vw,96px)!important}
 html body .ts-btn{box-shadow:none!important;border:1px solid var(--line)!important}
 html body .ts-dots{margin-top:28px!important}
@@ -2876,16 +2887,16 @@ const st=t=>{const k=Math.min(1,(t-t0)/D);n.textContent=Math.round(to*(1-Math.po
   <div class="cl-head wrap">
     <h2 id="tmH" class="cl-t"><span class="eyebrow">Client Feedback</span>What our client says</h2>
   </div>
-  <div class="ts wrap" aria-roledescription="carousel" aria-label="Project outcomes">
-    <div class="ts-band">
-            <div class="ts-track">
-      <figure class="ts-slide on ts-long" role="group" aria-roledescription="slide" aria-label="Client feedback">
-        <figcaption class="ts-who"><span class="ts-txt"><b>Rafeek</b><span>CEO, Online Printingz</span></span><span class="ts-av" aria-hidden="true">R</span></figcaption>
-        <div class="ts-body"><svg class="tm-q" viewBox="0 0 32 24" aria-hidden="true"><path d="M0 24V14C0 6 4.5 1.3 12 0l1.4 3.2C9 4.6 7 7.6 6.8 11H12v13zm18 0V14c0-8 4.5-12.7 12-14l1.4 3.2C27 4.6 25 7.6 24.8 11H30v13z" fill="currentColor"/></svg><blockquote class="ts-quote" data-client="Rafeek, Online Printingz"><p>I had a great experience working with Meridian Gray. They understood what I wanted and clearly defined the scope of work. A project that had been pending with other vendors for eight months was completed by their team within two months, with attention to detail and regular updates throughout.</p><p>What stood out most was their availability and communication. They explained the process, answered my questions, and were always open to discussions. I never felt left in the dark or had to wait weeks for a response.</p><p>I’m very happy with the experience and look forward to working with Meridian Gray on more projects in the future.</p></blockquote></div>
-      </figure>
+  <div class="wrap">
+    <figure class="cq">
+      <div class="cq-side">
+        <div class="cq-photo"><span class="cq-ini" aria-hidden="true">R</span><img src="assets/clients/rafeek.jpg" alt="Mr. Rafeek, CEO of Online Printingz" width="240" height="280" loading="lazy" onerror="this.remove()"></div>
+        <figcaption><b>Mr. Rafeek</b><span>CEO</span><em>Online Printingz</em></figcaption>
+        <div class="cq-stars" aria-label="5 out of 5">★★★★★</div>
       </div>
-          </div>
-      </div>
+      <blockquote class="cq-body"><svg class="cq-mark" viewBox="0 0 32 24" aria-hidden="true"><path d="M0 24V14C0 6 4.5 1.3 12 0l1.4 3.2C9 4.6 7 7.6 6.8 11H12v13zm18 0V14c0-8 4.5-12.7 12-14l1.4 3.2C27 4.6 25 7.6 24.8 11H30v13z" fill="currentColor"/></svg><p>I had a great experience working with Meridian Gray. They understood what I wanted and clearly defined the scope of work. A project that had been pending with other vendors for eight months was completed by their team within two months, with attention to detail and regular updates throughout.</p><p>What stood out most was their availability and communication. They explained the process, answered my questions, and were always open to discussions. I never felt left in the dark or had to wait weeks for a response.</p><p>I’m very happy with the experience and look forward to working with Meridian Gray on more projects in the future.</p></blockquote>
+    </figure>
+  </div>
 </section>
 
 <!-- ===== 12. INSIGHTS & RESOURCES ===== -->
