@@ -80,6 +80,21 @@ async function handleAuth(request, env, url) {
 		);
 	}
 
+	// Private share link: /auth/preview?key=<PREVIEW_KEY> gives a 7-day viewing
+	// session without Google sign-in. Change PREVIEW_KEY to revoke the link.
+	if (url.pathname === "/auth/preview") {
+		const key = url.searchParams.get("key") || "";
+		if (!env.PREVIEW_KEY || key !== env.PREVIEW_KEY) {
+			return htmlPage("Link not valid", `<p>This preview link is not valid or has been turned off.</p>`);
+		}
+		const days = 7;
+		const token = await signSession({ email: "preview-link", exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24 * days }, env);
+		const h = new Headers();
+		h.append("Set-Cookie", `${COOKIE_NAME}=${token}; Path=/; Max-Age=${60 * 60 * 24 * days}; HttpOnly; Secure; SameSite=Lax`);
+		h.set("Location", "/");
+		return new Response(null, { status: 302, headers: h });
+	}
+
 	if (url.pathname === "/auth/login") {
 		const redirectUri = `${url.origin}/auth/callback`;
 		const params = new URLSearchParams({

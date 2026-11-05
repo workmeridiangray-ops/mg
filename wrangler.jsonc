@@ -20,6 +20,7 @@
 	"vars": {
 		"GATE_ENABLED": "true",
 		"GOOGLE_CLIENT_ID": "83114262692-t20h3npqkn8grlic4064fjgnprkqgouu.apps.googleusercontent.com",
+		"PREVIEW_KEY": "yzNL2hTgZhs8UQ1c7p75IUPUB3rjgkkA",
 		"ALLOWED_EMAILS": "work.meridiangray@gmail.com,mehtaambeshwar@gmail.com,ambheshwarmehta28@gmail.com,avnishpatel2191@gmail.com"
 	},
 	"assets": {
