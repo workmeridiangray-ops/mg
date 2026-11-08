@@ -309,8 +309,8 @@ html,body{height:100%;overflow:hidden;background:#0B0E1A;color:#fff;font-family:
 #panel{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;transition:opacity .5s}
 #panel.gone{opacity:0;pointer-events:none}
 .card{max-width:520px;width:100%;text-align:center;background:rgba(11,14,26,.9);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:34px 26px;box-shadow:0 30px 60px -20px rgba(0,0,0,.7)}
-.brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#9AA0B4;margin-bottom:18px;font-weight:600}
-.brand b{color:#fff}
+.logo{display:block;width:96px;height:96px;margin:0 auto 14px;background:#fff;border-radius:22px;padding:6px;box-shadow:0 10px 24px -10px rgba(0,0,0,.6)}
+.brand{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#9AA0B4;margin-bottom:18px;font-weight:600}
 h1{font-size:clamp(28px,6vw,44px);line-height:1.1;letter-spacing:-.03em;font-weight:700;margin-bottom:10px}
 h1 em{font-style:normal;color:#7C94FF}
 p.lead{color:#9AA0B4;font-size:15px;line-height:1.5;margin-bottom:22px}
@@ -330,7 +330,8 @@ p.lead{color:#9AA0B4;font-size:15px;line-height:1.5;margin-bottom:22px}
 <div id="shutter" aria-hidden="true"></div>
 <div id="panel">
   <div class="card">
-    <div class="brand"><b>Meridian Gray</b> &middot; Connecting Systems</div>
+    <img class="logo" src="/favicon-512x512.png" width="96" height="96" alt="Meridian Gray">
+    <div class="brand">Connecting Systems</div>
     <h1>The shop opens <em>soon.</em></h1>
     <p class="lead">The shutter rolls up at 5:22 PM IST today, 8 November.</p>
     <div id="count" aria-live="off">
