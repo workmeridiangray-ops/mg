@@ -300,12 +300,12 @@ html,body{height:100%;overflow:hidden;background:#0B0E1A;color:#fff;font-family:
 #site{position:fixed;inset:0;width:100%;height:100%;border:0;background:#0B0E1A;z-index:1;display:none}
 #shutter{position:fixed;inset:0;z-index:10;perspective:1200px;perspective-origin:50% 0%;overflow:hidden}
 .slat{position:absolute;left:0;width:100%;transform-origin:50% 0%;backface-visibility:hidden;
- background:linear-gradient(180deg,#d9dde2 0%,#9aa1a9 45%,#6f767e 55%,#b9bec4 100%);
- border-bottom:1px solid rgba(0,0,0,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 1px 3px rgba(0,0,0,.35)}
+ background:linear-gradient(180deg,#6F8CF2 0%,#244BDB 45%,#1A38A8 55%,#4A6BEA 100%);
+ border-bottom:1px solid rgba(8,16,60,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 1px 3px rgba(8,16,60,.45)}
 .slat::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.03) 0 2px,transparent 2px 6px)}
-.drum{position:absolute;left:0;top:0;width:100%;height:0;background:linear-gradient(180deg,#2b2e32,#8b9299 40%,#4a4f55 70%,#222);box-shadow:0 6px 18px rgba(0,0,0,.55)}
-.bar{position:absolute;left:0;width:100%;height:46px;background:linear-gradient(180deg,#4a4d52,#1d1f22 60%,#2c2f33);box-shadow:0 8px 20px rgba(0,0,0,.5)}
-.bar::before{content:"";position:absolute;left:50%;top:14px;width:110px;height:18px;transform:translateX(-50%);border-radius:9px;background:linear-gradient(180deg,#f0cf7d,#9b7424);box-shadow:0 2px 4px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.5)}
+.drum{position:absolute;left:0;top:0;width:100%;height:0;background:linear-gradient(180deg,#0B0E1A,#3A5DE6 40%,#1A38A8 70%,#0B0E1A);box-shadow:0 6px 18px rgba(0,0,0,.55)}
+.bar{position:absolute;left:0;width:100%;height:46px;background:linear-gradient(180deg,#1A38A8,#0B0E1A 60%,#141a3a);box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.bar::before{content:"";position:absolute;left:50%;top:14px;width:110px;height:18px;transform:translateX(-50%);border-radius:9px;background:linear-gradient(180deg,#EEF2FD,#A9BAF3);box-shadow:0 2px 4px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.5)}
 #panel{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;transition:opacity .5s}
 #panel.gone{opacity:0;pointer-events:none}
 .card{max-width:520px;width:100%;text-align:center;background:rgba(11,14,26,.9);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:34px 26px;box-shadow:0 30px 60px -20px rgba(0,0,0,.7)}
