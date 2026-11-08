@@ -61,8 +61,19 @@ export default {
 	},
 };
 
+// Launch moment: the gate switches itself off at this time, server-side, so
+// nobody can open the site early by tampering with their browser clock.
+// Override with the LAUNCH_AT variable (any ISO-8601 time with offset).
+const DEFAULT_LAUNCH_AT = "2026-11-08T17:22:00+05:30";
+
+function launchMs(env) {
+	const t = Date.parse(String(env.LAUNCH_AT || DEFAULT_LAUNCH_AT));
+	return Number.isNaN(t) ? Date.parse(DEFAULT_LAUNCH_AT) : t;
+}
+
 function isGateOn(env) {
-	return String(env.GATE_ENABLED || "true").toLowerCase() === "true";
+	if (String(env.GATE_ENABLED || "true").toLowerCase() !== "true") return false;
+	return Date.now() < launchMs(env);
 }
 
 function allowedEmails(env) {
@@ -259,9 +270,15 @@ p{color:#B9BDCB}
 }
 
 function comingSoonPage(env) {
-	return new Response(COMING_SOON_HTML, {
+	const html = COMING_SOON_HTML
+		.replace("__SERVER_NOW__", String(Date.now()))
+		.replace("__LAUNCH_MS__", String(launchMs(env)));
+	return new Response(html, {
 		status: 200,
-		headers: { "content-type": "text/html; charset=utf-8" },
+		headers: {
+			"content-type": "text/html; charset=utf-8",
+			"cache-control": "no-store",
+		},
 	});
 }
 
@@ -270,41 +287,220 @@ const COMING_SOON_HTML = `<!doctype html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Meridian Gray &middot; Coming Soon</title>
+<title>Meridian Gray &middot; Opening Soon</title>
 <meta name="robots" content="noindex,nofollow">
+<meta name="mg-gate" content="1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <style>
-:root{--aub:#244BDB;--ink:#fff;--mute:#9AA0B4}
-*{box-sizing:border-box}
-body{margin:0;min-height:100svh;background:#0B0E1A;color:var(--ink);font-family:'Plus Jakarta Sans',-apple-system,sans-serif;display:flex;flex-direction:column}
-.wrap{flex:1;display:grid;place-items:center;padding:24px}
-.card{max-width:480px;width:100%;text-align:center}
-.brand{font-size:14px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);margin-bottom:28px;font-weight:600}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden;background:#0B0E1A;color:#fff;font-family:'Plus Jakarta Sans',-apple-system,sans-serif}
+#site{position:fixed;inset:0;width:100%;height:100%;border:0;background:#0B0E1A;z-index:1;display:none}
+#shutter{position:fixed;inset:0;z-index:10;perspective:1200px;perspective-origin:50% 0%;overflow:hidden}
+.slat{position:absolute;left:0;width:100%;transform-origin:50% 0%;backface-visibility:hidden;
+ background:linear-gradient(180deg,#d9dde2 0%,#9aa1a9 45%,#6f767e 55%,#b9bec4 100%);
+ border-bottom:1px solid rgba(0,0,0,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 1px 3px rgba(0,0,0,.35)}
+.slat::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,.03) 0 2px,transparent 2px 6px)}
+.drum{position:absolute;left:0;top:0;width:100%;height:0;background:linear-gradient(180deg,#2b2e32,#8b9299 40%,#4a4f55 70%,#222);box-shadow:0 6px 18px rgba(0,0,0,.55)}
+.bar{position:absolute;left:0;width:100%;height:46px;background:linear-gradient(180deg,#4a4d52,#1d1f22 60%,#2c2f33);box-shadow:0 8px 20px rgba(0,0,0,.5)}
+.bar::before{content:"";position:absolute;left:50%;top:14px;width:110px;height:18px;transform:translateX(-50%);border-radius:9px;background:linear-gradient(180deg,#f0cf7d,#9b7424);box-shadow:0 2px 4px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.5)}
+#panel{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:24px;transition:opacity .5s}
+#panel.gone{opacity:0;pointer-events:none}
+.card{max-width:520px;width:100%;text-align:center;background:rgba(11,14,26,.9);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:34px 26px;box-shadow:0 30px 60px -20px rgba(0,0,0,.7)}
+.brand{font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:#9AA0B4;margin-bottom:18px;font-weight:600}
 .brand b{color:#fff}
-h1{font-size:clamp(34px,6vw,52px);line-height:1.08;letter-spacing:-.03em;font-weight:700;margin:0 0 18px}
+h1{font-size:clamp(28px,6vw,44px);line-height:1.1;letter-spacing:-.03em;font-weight:700;margin-bottom:10px}
 h1 em{font-style:normal;color:#7C94FF}
-p.lead{color:var(--mute);font-size:16px;line-height:1.6;margin:0 0 36px}
-.btn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#111;font-weight:600;font-size:15px;padding:13px 22px;border-radius:999px;text-decoration:none;transition:transform .2s,box-shadow .2s}
-.btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px -8px rgba(255,255,255,.3)}
+p.lead{color:#9AA0B4;font-size:15px;line-height:1.5;margin-bottom:22px}
+#count{display:flex;justify-content:center;gap:10px;margin-bottom:26px}
+.u{min-width:68px;padding:12px 6px;border-radius:12px;background:#151a2e;border:1px solid rgba(255,255,255,.08)}
+.u b{display:block;font-size:clamp(26px,7vw,38px);font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.u span{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#9AA0B4}
+.btn{display:inline-flex;align-items:center;gap:10px;background:#fff;color:#111;font-weight:600;font-size:14px;padding:12px 20px;border-radius:999px;text-decoration:none}
 .btn svg{width:18px;height:18px}
-footer{text-align:center;padding:20px;color:#5A5F72;font-size:12px}
+.team{font-size:12px;color:#7a8095;margin-bottom:10px}
+#sound{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:30;background:rgba(0,0,0,.75);color:#fff;border:0;padding:9px 18px;border-radius:30px;font:600 13px 'Plus Jakarta Sans',sans-serif;cursor:pointer;transition:opacity .4s}
+#sound.hide{opacity:0;pointer-events:none}
 </style>
 </head>
 <body>
-<div class="wrap">
+<iframe id="site" title="Meridian Gray" aria-hidden="true"></iframe>
+<div id="shutter" aria-hidden="true"></div>
+<div id="panel">
   <div class="card">
     <div class="brand"><b>Meridian Gray</b> &middot; Connecting Systems</div>
-    <h1>Something's being <em>built.</em></h1>
-    <p class="lead">We're not quite ready to open the doors. If you're on the team, sign in below to preview the site.</p>
+    <h1>The shop opens <em>soon.</em></h1>
+    <p class="lead">The shutter rolls up at 5:22 PM IST today, 8 November.</p>
+    <div id="count" aria-live="off">
+      <div class="u"><b id="cH">--</b><span>Hours</span></div>
+      <div class="u"><b id="cM">--</b><span>Minutes</span></div>
+      <div class="u"><b id="cS">--</b><span>Seconds</span></div>
+    </div>
+    <div class="team">On the team? Preview the site early:</div>
     <a class="btn" href="/auth/login">
       <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 8 3l5.7-5.7C34.9 6.1 29.8 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.6 16 19 13 24 13c3.1 0 5.8 1.1 8 3l5.7-5.7C34.9 6.1 29.8 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.7 0 10.7-1.9 14.5-5.2l-6.7-5.7C29.7 34.6 27 35.5 24 35.5c-5.2 0-9.6-3.3-11.2-7.9l-6.6 5.1C9.6 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.2 4.2-4.1 5.6l6.7 5.7C41.5 36.1 44 30.6 44 24c0-1.3-.1-2.7-.4-3.5z"/></svg>
       Sign in with Google
     </a>
   </div>
 </div>
-<footer>&copy; Meridian Gray</footer>
+<button id="sound" type="button">&#128266; Tap once to turn the shutter sound on</button>
+
+<script>
+(function () {
+  var SERVER_NOW = __SERVER_NOW__, LAUNCH = __LAUNCH_MS__;
+  var offset = SERVER_NOW - Date.now();           // use server time, not the visitor's clock
+  function now() { return Date.now() + offset; }
+
+  var N = 72, BAR = 46, OPEN_MS = 5200;
+  var shutter = document.getElementById('shutter');
+  var panel = document.getElementById('panel');
+  var soundBtn = document.getElementById('sound');
+  var site = document.getElementById('site');
+  var slats = [];
+  for (var i = 0; i < N; i++) { var s = document.createElement('div'); s.className = 'slat'; shutter.appendChild(s); slats.push(s); }
+  var drum = document.createElement('div'); drum.className = 'drum'; shutter.appendChild(drum);
+  var bar = document.createElement('div'); bar.className = 'bar'; shutter.appendChild(bar);
+
+  /* ---- sound (synthesised) ---- */
+  var ac, master, rumble;
+  function noiseBuf(sec) {
+    var b = ac.createBuffer(1, ac.sampleRate * sec, ac.sampleRate), d = b.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    return b;
+  }
+  function initAudio() {
+    if (ac) { if (ac.state === 'suspended') ac.resume(); return; }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    ac = new AC();
+    master = ac.createGain(); master.gain.value = 2.2;
+    var comp = ac.createDynamicsCompressor(); comp.threshold.value = -18; comp.ratio.value = 8;
+    master.connect(comp); comp.connect(ac.destination);
+    var rb = ac.createBufferSource(); rb.buffer = noiseBuf(2); rb.loop = true;
+    var lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 500;
+    rumble = ac.createGain(); rumble.gain.value = 0;
+    rb.connect(lp); lp.connect(rumble); rumble.connect(master); rb.start();
+    soundBtn.classList.add('hide');
+  }
+  function tick() {
+    if (!ac) return;
+    var t = ac.currentTime;
+    var src = ac.createBufferSource(); src.buffer = noiseBuf(0.05);
+    var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2800 + Math.random() * 1500; bp.Q.value = 4;
+    var g = ac.createGain(); g.gain.setValueAtTime(0.9, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+    src.connect(bp); bp.connect(g); g.connect(master); src.start(t); src.stop(t + 0.05);
+    var o = ac.createOscillator(); o.type = 'square'; o.frequency.value = 700 + Math.random() * 500;
+    var og = ac.createGain(); og.gain.setValueAtTime(0.12, t); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+    o.connect(og); og.connect(master); o.start(t); o.stop(t + 0.035);
+  }
+  function rattle(k) {
+    if (!ac) return;
+    var t = ac.currentTime;
+    var src = ac.createBufferSource(); src.buffer = noiseBuf(0.12);
+    var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1200 + Math.random() * 1800; bp.Q.value = 2.5;
+    var g = ac.createGain(); g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.25 * k, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+    src.connect(bp); bp.connect(g); g.connect(master); src.start(t); src.stop(t + 0.12);
+  }
+  function clunk(freq, vol, len) {
+    if (!ac) return;
+    var t = ac.currentTime;
+    var o = ac.createOscillator(); o.type = 'triangle';
+    o.frequency.setValueAtTime(freq * 2, t); o.frequency.exponentialRampToValueAtTime(freq * 0.5, t + len);
+    var g = ac.createGain(); g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + len);
+    o.connect(g); g.connect(master); o.start(t); o.stop(t + len);
+    var n = ac.createBufferSource(); n.buffer = noiseBuf(0.15);
+    var hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 2500;
+    var ng = ac.createGain(); ng.gain.setValueAtTime(vol * 0.5, t); ng.gain.exponentialRampToValueAtTime(0.0001, t + 0.12);
+    n.connect(hp); hp.connect(ng); ng.connect(master); n.start(t); n.stop(t + 0.15);
+  }
+  ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(function (ev) {
+    addEventListener(ev, initAudio, { passive: true });
+  });
+  soundBtn.addEventListener('click', initAudio);
+
+  /* ---- shutter render ---- */
+  function render(p) {
+    var h = innerHeight, Hs = h - BAR, slatH = Hs / N, lift = p * Hs;
+    for (var i = 0; i < N; i++) {
+      var s = slats[i], y = i * slatH, d = y - lift;
+      s.style.height = (Math.ceil(slatH) + 1) + 'px';
+      s.style.top = y + 'px';
+      if (d >= 0) { s.style.transform = 'translateY(' + (-lift) + 'px)'; s.style.opacity = 1; }
+      else {
+        var k = Math.min(1, -d / (h * 0.22));
+        s.style.transform = 'translateY(' + (-lift + (-d) * 0.9) + 'px) translateZ(' + (-k * 120) + 'px) rotateX(' + (-k * 95) + 'deg)';
+        s.style.opacity = 1 - k;
+      }
+    }
+    bar.style.top = (Hs - lift) + 'px';
+    drum.style.height = (30 * Math.min(1, p * 1.5)) + 'px';
+    drum.style.opacity = p > 0.01 ? 1 : 0;
+  }
+  render(0);
+  addEventListener('resize', function () { render(window.__p || 0); });
+
+  /* ---- countdown ---- */
+  var cH = document.getElementById('cH'), cM = document.getElementById('cM'), cS = document.getElementById('cS');
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  var launched = false;
+  function update() {
+    var left = LAUNCH - now();
+    if (left <= 0) { if (!launched) launch(); return; }
+    var t = Math.floor(left / 1000);
+    cH.textContent = pad(Math.floor(t / 3600));      // hours can exceed 24 if the launch time is moved out
+    cM.textContent = pad(Math.floor((t % 3600) / 60));
+    cS.textContent = pad(t % 60);
+  }
+  update();
+  var timer = setInterval(update, 250);
+
+  /* ---- launch: countdown + sign-in go, shutter rolls up with sound ---- */
+  function launch() {
+    launched = true; clearInterval(timer);
+    panel.classList.add('gone');
+    soundBtn.classList.add('hide');
+    loadSiteBehind();
+    initAudio();
+    clunk(140, 1, 0.25);                              // latch release
+    var start = performance.now(), last = 0, lastRattle = 0;
+    function ease(x) { return x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2; }
+    function frame(ts) {
+      var x = Math.min(1, (ts - start) / OPEN_MS), p = ease(x);
+      var prev = window.__p || 0; window.__p = p;
+      var passed = Math.floor(p * N), before = Math.floor(prev * N);
+      if (passed > before) { var c = Math.min(passed - before, 4); for (var i = 0; i < c; i++) setTimeout(tick, i * 12); }
+      var speed = p - prev;
+      if (rumble) rumble.gain.setTargetAtTime(Math.min(1.2, speed * 90), ac.currentTime, 0.05);
+      if (speed > 0.0006 && ts - lastRattle > 90) { rattle(Math.min(1.5, speed * 120)); lastRattle = ts; }
+      render(p);
+      if (x < 1) requestAnimationFrame(frame); else done();
+    }
+    requestAnimationFrame(frame);
+  }
+  function done() {
+    clunk(70, 1, 0.5);                                // shutter hits the top stop
+    shutter.style.display = 'none';
+    var go = function () { location.replace('/'); };
+    setTimeout(go, 700);
+  }
+
+  /* load the real site behind the shutter once the server has opened the gate */
+  function loadSiteBehind() {
+    var tries = 0;
+    (function attempt() {
+      fetch('/?launch=' + Date.now(), { cache: 'no-store', credentials: 'same-origin' })
+        .then(function (r) { return r.text(); })
+        .then(function (txt) {
+          if (txt.indexOf('name="mg-gate"') !== -1 && tries++ < 20) { setTimeout(attempt, 500); return; }
+          if (txt.indexOf('name="mg-gate"') === -1) { site.style.display = 'block'; site.src = '/'; }
+        })
+        .catch(function () { if (tries++ < 20) setTimeout(attempt, 500); });
+    })();
+  }
+})();
+</script>
 </body>
 </html>`;
