@@ -36,6 +36,22 @@ const BYPASS_PATHS = new Set([
 
 export default {
 	async fetch(request, env) {
+		return withSecurityHeaders(await handleRequest(request, env));
+	},
+};
+
+function withSecurityHeaders(response) {
+	const res = new Response(response.body, response);
+	res.headers.set("Strict-Transport-Security", "max-age=31536000");
+	res.headers.set("X-Content-Type-Options", "nosniff");
+	res.headers.set("X-Frame-Options", "SAMEORIGIN");
+	res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+	res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+	return res;
+}
+
+const handler = {
+	async fetch(request, env) {
 		const url = new URL(request.url);
 
 		if (url.pathname === "/robots.txt" && isGateOn(env)) {
@@ -60,6 +76,10 @@ export default {
 		return comingSoonPage(env);
 	},
 };
+
+function handleRequest(request, env) {
+	return handler.fetch(request, env);
+}
 
 // Launch moment: the gate switches itself off at this time, server-side, so
 // nobody can open the site early by tampering with their browser clock.

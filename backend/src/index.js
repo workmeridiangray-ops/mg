@@ -301,9 +301,36 @@ async function sendBrevoEmail(env, { subject, htmlContent, to, replyTo, preheade
   return { ok: true };
 }
 
+// Cloudflare Turnstile check. Inactive until the TURNSTILE_SECRET secret is set,
+// so the form keeps working before the widget is configured.
+async function verifyTurnstile(request, env, token) {
+  if (!env.TURNSTILE_SECRET) return true;
+  if (!token) return false;
+  try {
+    const r = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      body: new URLSearchParams({
+        secret: env.TURNSTILE_SECRET,
+        response: String(token),
+        remoteip: request.headers.get("CF-Connecting-IP") || "",
+      }),
+    });
+    const v = await r.json();
+    return !!v.success;
+  } catch (e) {
+    return false;
+  }
+}
+
 async function handleContact(request, env) {
   const body = await request.json().catch(() => null);
   if (!body) return json({ error: "Invalid JSON body" }, 400, env);
+
+  // Honeypot: real visitors never fill this hidden field. Pretend success to bots.
+  if (body.hp_company) return json({ ok: true }, 200, env);
+  if (!(await verifyTurnstile(request, env, body.turnstile_token))) {
+    return json({ error: "Verification failed. Please refresh and try again." }, 400, env);
+  }
 
   const {
     name = "",
