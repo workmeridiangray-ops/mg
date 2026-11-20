@@ -335,7 +335,25 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 <h2>The cost this creates</h2>
 <p>An order gets quoted against Plant A's stock without checking whether Plant B is already overstocked on the same item and could ship faster. A transfer between plants gets requested reactively, under time pressure, rather than planned, because nobody had visibility into the imbalance until it became urgent. Both are avoidable with the same fix: a combined view, not two accurate-but-separate ones.</p>
 <h2>What a combined view requires</h2>
-<p>Each plant keeps its own operational stock system — that doesn't need to change. What's missing is usually a layer above it: one place where combined quantities by SKU, across every location, are visible to whoever is making fulfilment or transfer decisions. This doesn't require merging the plants' systems into one; it requires each one feeding the same shared number.</p></div>
+<p>Each plant keeps its own operational stock system — that doesn't need to change. What's missing is usually a layer above it: one place where combined quantities by SKU, across every location, are visible to whoever is making fulfilment or transfer decisions. This doesn't require merging the plants' systems into one; it requires each one feeding the same shared number.</p>
+<!--x:start--><h2>Building a combined stock view</h2>
+<p>Each plant keeps its own stock system, but every plant's stock data, by item, quantity, status and location, feeds into one combined view. Use common item codes across plants; if Plant A calls a part "RM-1001" and Plant B calls it "Steel Rod 10mm", the combined view will not match them. Standardising item codes is often the first and most important step.</p>
+<h2>What the combined view should show</h2>
+<ul>
+<li>Stock by item and plant, with status such as available, reserved, in quality check or in transit.</li>
+<li>Open orders and the plant allocated to each.</li>
+<li>Stock in transit between plants.</li>
+<li>Reorder alerts considering all plants, not just one.</li>
+</ul>
+<h2>Decisions it enables</h2>
+<ul>
+<li>Fulfilling an order from the plant that has stock, instead of producing more elsewhere.</li>
+<li>Transferring surplus material between plants before buying more.</li>
+<li>Planning production based on total available stock.</li>
+<li>Reducing safety stock overall, because shortages at one plant can be covered by another.</li>
+</ul>
+<h2>Updating frequency</h2>
+<p>Stock data should update at least daily, ideally in real time when goods move. Inter-plant transfers need clear recording when goods leave and when they arrive, so stock is never counted in two places or none.</p><!--x:end--></div>
   <div class="art-cta"><p><em>We connect multi-plant stock into one combined view without forcing every plant onto identical internal systems — the shared number sits above what each location already uses.</em></p></div>
   
 <style>
@@ -357,7 +375,7 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 .art-faq-item b{display:block;font-size:16px;font-weight:600;color:#111;margin-bottom:8px}
 .art-faq-item p{font:400 15.5px/1.65 'Plus Jakarta Sans',sans-serif;color:#3A3F4D;margin:0}
 </style>
-<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What&#x27;s the core issue with multi-location manufacturing — stock visibility across plants?</b><p>A manufacturer running two or three plants often has, in effect, two or three separate businesses as far as stock visibility goes — each plant knows its own position well, and nobody has a reliable combined view without a round of phone calls.</p></div><div class="art-faq-item"><b>What actually fixes this?</b><p>Each plant keeps its own operational stock system — that doesn&#x27;t need to change. What&#x27;s missing is usually a layer above it: one place where combined quantities by SKU, across every location, are visible to whoever is making fulfilment or transfer decisions. This doesn&#x27;t require merging the plants&#x27; systems into one; it requires each one feeding the same shared number.</p></div><div class="art-faq-item"><b>How does Meridian Gray help with this?</b><p>We connect multi-plant stock into one combined view without forcing every plant onto identical internal systems — the shared number sits above what each location already uses.</p></div></div>
+<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>How can manufacturers see stock across multiple plants?</b><p>Standardise item codes, then combine each plant's stock data into one view showing quantity, status, in-transit stock and open orders, updated at least daily.</p></div><div class="art-faq-item"><b>Why do multi-plant manufacturers overbuy materials?</b><p>Without a combined view, each plant plans independently and may buy material that another plant already holds in surplus.</p></div><div class="art-faq-item"><b>What is the first step towards multi-plant stock visibility?</b><p>Standardising item codes across plants, so the same item is recognised everywhere in the combined view.</p></div></div>
   <div class="art-related"><h4>Related reading</h4><div class="art-related-list"><a class="art-related-card" href="/blog-purchasing-and-production-planning-closing-the-information-g"><small>Industry · Manufacturing</small><b>Purchasing and production planning — closing the information gap</b></a><a class="art-related-card" href="/blog-machine-and-equipment-downtime-tracking-that-actually-gets-u"><small>Industry · Manufacturing</small><b>Machine and equipment downtime tracking that actually gets used</b></a><a class="art-related-card" href="/blog-what-a-connected-system-actually-looks-like-for-a-manufactur"><small>Industry · Manufacturing</small><b>What a connected system actually looks like for a manufacturing business</b></a></div></div>
   <a class="art-back" href="/what-we-think">&larr; Back to What We Think</a>
 </article></main>

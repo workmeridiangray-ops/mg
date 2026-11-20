@@ -335,7 +335,21 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 <h2>What routing by cost and speed actually requires</h2>
 <p>A rule, applied automatically at the point of order: given this delivery address and this item's availability across warehouses, which location minimises cost or delivery time, within whatever constraints matter (stock availability, minimum order thresholds, carrier agreements). This doesn't need to be a complex optimisation engine — even a simple nearest-available-stock rule captures most of the benefit over defaulting to one warehouse by habit.</p>
 <h2>The visibility piece that's often missing</h2>
-<p>Beyond routing a single order well, aggregated cost visibility — which warehouse-to-destination lanes are consistently expensive, which products are being shipped further than necessary because of where stock happens to sit — turns a one-order-at-a-time improvement into a genuine network design conversation.</p></div>
+<p>Beyond routing a single order well, aggregated cost visibility — which warehouse-to-destination lanes are consistently expensive, which products are being shipped further than necessary because of where stock happens to sit — turns a one-order-at-a-time improvement into a genuine network design conversation.</p>
+<!--x:start--><h2>Routing rules to start with</h2>
+<ul>
+<li>Ship from the warehouse closest to the delivery address that has full stock of the order.</li>
+<li>If no single warehouse has everything, decide whether to split the shipment or transfer stock, based on cost.</li>
+<li>Prefer the lowest-cost option that still meets the promised delivery time.</li>
+<li>Handle express orders separately, prioritising speed over cost.</li>
+</ul>
+<p>These rules can be applied in an order management system or a well-structured routing table.</p>
+<h2>Cost data needed</h2>
+<p>For each warehouse and delivery zone combination, record courier rates by weight slab, typical delivery time, return rates and any surcharges. Even a simple table of these numbers allows smarter routing decisions than habit.</p>
+<h2>Monthly lane analysis</h2>
+<p>Review shipping cost per order by warehouse and destination zone every month. Expensive lanes might point to stock placed in the wrong warehouse, poor courier rates or frequent split shipments. Adjust stock placement, renegotiate rates or change routing rules accordingly.</p>
+<h2>Positioning stock where demand is</h2>
+<p>Use sales data by region to decide how much stock each warehouse holds. If a large share of orders comes from one region but stock sits elsewhere, moving inventory closer to demand reduces both cost and delivery time.</p><!--x:end--></div>
   <div class="art-cta"><p><em>We build routing rules that compare real warehouse options at the point of order, and the aggregated reporting that turns individual routing decisions into network-level insight.</em></p></div>
   
 <style>
@@ -357,7 +371,7 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 .art-faq-item b{display:block;font-size:16px;font-weight:600;color:#111;margin-bottom:8px}
 .art-faq-item p{font:400 15.5px/1.65 'Plus Jakarta Sans',sans-serif;color:#3A3F4D;margin:0}
 </style>
-<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What&#x27;s the core issue with multi-warehouse routing and cost visibility?</b><p>Running more than one warehouse should mean shorter delivery times and lower shipping costs, since orders can be fulfilled from whichever location is closest. In practice, many businesses with multiple warehouses still route every order through habit or convenience rather than through an actual cost or speed comparison.</p></div><div class="art-faq-item"><b>What actually fixes this?</b><p>A rule, applied automatically at the point of order: given this delivery address and this item&#x27;s availability across warehouses, which location minimises cost or delivery time, within whatever constraints matter (stock availability, minimum order thresholds, carrier agreements). This doesn&#x27;t need to be a complex optimisation engine — even a simple nearest-available-stock rule captures most of the benefit over defaulting to...</p></div><div class="art-faq-item"><b>How does Meridian Gray help with this?</b><p>We build routing rules that compare real warehouse options at the point of order, and the aggregated reporting that turns individual routing decisions into network-level insight.</p></div></div>
+<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>How should orders be routed between warehouses?</b><p>Ship from the nearest warehouse with full stock, compare cost and delivery time for split shipments or transfers, and handle express orders separately.</p></div><div class="art-faq-item"><b>What data is needed for warehouse routing decisions?</b><p>Courier rates by weight and zone, typical delivery times, return rates and surcharges for each warehouse and destination combination.</p></div><div class="art-faq-item"><b>How can multi-warehouse businesses reduce shipping costs?</b><p>Route by cost and speed rather than habit, position stock near demand, reduce split shipments and review expensive lanes monthly.</p></div></div>
   <div class="art-related"><h4>Related reading</h4><div class="art-related-list"><a class="art-related-card" href="/blog-fleet-and-driver-coordination-without-spreadsheets"><small>Industry · Logistics &amp; 3PL</small><b>Fleet and driver coordination without spreadsheets</b></a><a class="art-related-card" href="/blog-proof-of-delivery-and-billing-disputes-closing-the-gap"><small>Industry · Logistics &amp; 3PL</small><b>Proof of delivery and billing disputes — closing the gap</b></a><a class="art-related-card" href="/blog-what-one-view-of-stock-actually-requires-behind-the-scenes"><small>Industry · Logistics &amp; 3PL</small><b>What &quot;one view of stock&quot; actually requires behind the scenes</b></a></div></div>
   <a class="art-back" href="/what-we-think">&larr; Back to What We Think</a>
 </article></main>
