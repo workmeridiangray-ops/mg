@@ -36,12 +36,55 @@ const BYPASS_PATHS = new Set([
 
 export default {
 	async fetch(request, env) {
-		return withSecurityHeaders(await handleRequest(request, env));
+		const path = new URL(request.url).pathname;
+		const redirect = canonicalRedirect(request);
+		if (redirect) return withSecurityHeaders(redirect, path);
+		return withSecurityHeaders(await handleRequest(request, env), path);
 	},
 };
 
-function withSecurityHeaders(response) {
+// One URL per page for search engines. Everything else gets a permanent
+// (301) redirect to https://www.meridiangray.in/<clean-path>:
+//   http://...            -> https://...
+//   meridiangray.in       -> www.meridiangray.in
+//   /about.html, /about/  -> /about
+//   /index.html           -> /
+// (The static-asset layer alone answers these with 307 "temporary"
+// redirects or plain 200s, which Google treats as duplicate pages.)
+const CANONICAL_HOST = "www.meridiangray.in";
+
+function canonicalRedirect(request) {
+	if (request.method !== "GET" && request.method !== "HEAD") return null;
+	const url = new URL(request.url);
+	// Only touch the production domains -- leave *.workers.dev / previews alone.
+	if (url.hostname !== CANONICAL_HOST && url.hostname !== "meridiangray.in") return null;
+	if (url.pathname.startsWith("/auth/")) return null;
+
+	let path = url.pathname;
+	if (/\/index\.html$/i.test(path)) path = path.replace(/index\.html$/i, "");
+	else if (/\.html$/i.test(path) && path !== "/404.html") path = path.replace(/\.html$/i, "");
+	if (path.length > 1 && path.endsWith("/")) path = path.replace(/\/+$/, "");
+
+	const proto = url.protocol === "http:" || request.headers.get("x-forwarded-proto") === "http" ? "http:" : url.protocol;
+	if (proto === "https:" && url.hostname === CANONICAL_HOST && path === url.pathname) return null;
+
+	return new Response(null, {
+		status: 301,
+		headers: { Location: `https://${CANONICAL_HOST}${path}${url.search}`, "Cache-Control": "public, max-age=86400" },
+	});
+}
+
+function withSecurityHeaders(response, currentPath = "") {
 	const res = new Response(response.body, response);
+	// Declare the encoding at the HTTP level so crawlers never have to guess.
+	const type = res.headers.get("content-type") || "";
+	if (/^text\/|javascript|xml|json/i.test(type) && !/charset/i.test(type)) {
+		res.headers.set("content-type", `${type.split(";")[0].trim()}; charset=utf-8`);
+	}
+	// Content-hashed files (e.g. /assets/mg-site.76406239.css) never change.
+	if (res.status === 200 && /\/assets\/[\w-]+\.[0-9a-f]{8}\.(css|js)$/.test(currentPath)) {
+		res.headers.set("Cache-Control", "public, max-age=31536000, immutable");
+	}
 	res.headers.set("Strict-Transport-Security", "max-age=31536000");
 	res.headers.set("X-Content-Type-Options", "nosniff");
 	res.headers.set("X-Frame-Options", "SAMEORIGIN");
