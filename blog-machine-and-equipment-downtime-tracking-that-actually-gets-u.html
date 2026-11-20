@@ -335,7 +335,23 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 <h2>What makes the data usable</h2>
 <p>Three things, consistently captured at the moment downtime starts and ends, not reconstructed later: which machine, what the stated reason was, and how long it actually lasted. That's a low bar, but it's the bar that's usually missed — "lasted" especially, since informal logs tend to record that a breakdown happened without recording how long production was actually stopped.</p>
 <h2>Turning the log into a decision</h2>
-<p>Once downtime is tracked this consistently for a few months, the same data answers a question that's much harder to answer from memory: which machine would most reward a preventive maintenance investment, and which breakdowns are random noise versus a predictable pattern. That's a materially different conversation than "that machine breaks down a lot" — it's a number you can weigh against the cost of fixing it properly.</p></div>
+<p>Once downtime is tracked this consistently for a few months, the same data answers a question that's much harder to answer from memory: which machine would most reward a preventive maintenance investment, and which breakdowns are random noise versus a predictable pattern. That's a materially different conversation than "that machine breaks down a lot" — it's a number you can weigh against the cost of fixing it properly.</p>
+<!--x:start--><h2>A simple downtime log design</h2>
+<p>Each downtime event needs only a few fields:</p>
+<ul>
+<li>Machine or line.</li>
+<li>Start time and end time.</li>
+<li>Reason category, chosen from a short fixed list such as breakdown, changeover, material shortage, no operator, quality issue or planned maintenance.</li>
+<li>A short note.</li>
+<li>Who reported it.</li>
+</ul>
+<p>Keep the reason list short. A list of fifty reasons gets used inconsistently; a list of eight gets used every time.</p>
+<h2>Making it easy for operators</h2>
+<p>Operators should be able to log downtime in seconds, ideally by tapping a button on a tablet or phone at the machine, or scanning a QR code on the machine. If logging takes longer than the downtime itself, it will be skipped. Some plants start with a simple shared form, then move to sensors or machine connectivity once the habit is established.</p>
+<h2>Using the data</h2>
+<p>After a few weeks, sort downtime by machine and reason. Typical findings include one machine causing most breakdowns, changeovers taking longer than expected or material shortages stopping lines regularly. Each finding points to a specific fix: preventive maintenance, faster changeover methods or better material planning.</p>
+<h2>Measuring improvement</h2>
+<p>Track total downtime hours per week, downtime by reason and, if possible, overall equipment effectiveness (OEE). Share the results with operators so they see the log leads to action; that is what keeps them using it.</p><!--x:end--></div>
   <div class="art-cta"><p><em>We build downtime tracking around the three fields that actually make the data usable later — not a longer form that looks thorough but doesn't get filled in consistently.</em></p></div>
   
 <style>
@@ -357,7 +373,7 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 .art-faq-item b{display:block;font-size:16px;font-weight:600;color:#111;margin-bottom:8px}
 .art-faq-item p{font:400 15.5px/1.65 'Plus Jakarta Sans',sans-serif;color:#3A3F4D;margin:0}
 </style>
-<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What&#x27;s the core issue with machine and equipment downtime tracking that actually gets used?</b><p>Most manufacturers can tell you, roughly, which machines break down often. Far fewer can tell you how much that downtime actually costs in missed production, because the knowledge lives as general impression on the shop floor rather than as a number anyone has added up.</p></div><div class="art-faq-item"><b>What actually fixes this?</b><p>Three things, consistently captured at the moment downtime starts and ends, not reconstructed later: which machine, what the stated reason was, and how long it actually lasted. That&#x27;s a low bar, but it&#x27;s the bar that&#x27;s usually missed — &quot;lasted&quot; especially, since informal logs tend to record that a breakdown happened without recording how long production was actually stopped.</p></div><div class="art-faq-item"><b>How does Meridian Gray help with this?</b><p>We build downtime tracking around the three fields that actually make the data usable later — not a longer form that looks thorough but doesn&#x27;t get filled in consistently.</p></div></div>
+<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>How should manufacturers track machine downtime?</b><p>Log each event with machine, start and end time, a reason from a short fixed list, a note and who reported it, using a quick method such as a tablet or QR code at the machine.</p></div><div class="art-faq-item"><b>Why do downtime logs fail?</b><p>Because logging takes too long, reason categories are unclear or too many, or operators never see any action taken from the data.</p></div><div class="art-faq-item"><b>What is OEE in manufacturing?</b><p>Overall equipment effectiveness combines availability, performance and quality to show how productively a machine or line is used compared with its potential.</p></div></div>
   <div class="art-related"><h4>Related reading</h4><div class="art-related-list"><a class="art-related-card" href="/blog-quality-control-and-rejection-tracking-at-scale"><small>Industry · Manufacturing</small><b>Quality control and rejection tracking at scale</b></a><a class="art-related-card" href="/blog-from-quotation-to-dispatch-mapping-where-manufacturers-lose-"><small>Industry · Manufacturing</small><b>From quotation to dispatch — mapping where manufacturers lose time</b></a><a class="art-related-card" href="/blog-what-a-connected-system-actually-looks-like-for-a-manufactur"><small>Industry · Manufacturing</small><b>What a connected system actually looks like for a manufacturing business</b></a></div></div>
   <a class="art-back" href="/what-we-think">&larr; Back to What We Think</a>
 </article></main>
