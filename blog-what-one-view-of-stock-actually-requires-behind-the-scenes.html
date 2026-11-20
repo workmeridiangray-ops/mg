@@ -337,7 +337,20 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 <p><strong>How often other systems check in.</strong> "Real time" is the goal, but even a short, consistent interval — updated every few minutes rather than once a day — removes most of the practical risk of overselling or misquoting.</p>
 <p><strong>What happens when systems disagree.</strong> A clear rule for which number wins during a sync delay prevents confusion from turning into an actual customer-facing mistake.</p>
 <h2>The payoff</h2>
-<p>Once this is in place, the benefit isn't just accuracy — it's that nobody has to ask "is this number right?" before making a decision. That question disappearing is usually the clearest sign the fix has worked.</p></div>
+<p>Once this is in place, the benefit isn't just accuracy — it's that nobody has to ask "is this number right?" before making a decision. That question disappearing is usually the clearest sign the fix has worked.</p>
+<!--x:start--><h2>Decision 1: which system owns the number</h2>
+<p>Choose one system as the source of truth for stock, usually the warehouse management system, ERP or inventory tool closest to physical movements. Every other system, such as marketplaces, website, sales app and dealer portal, reads from it rather than keeping its own count.</p>
+<h2>Decision 2: how often systems update</h2>
+<p>Fast-moving businesses need near real-time updates triggered by events like dispatch, receipt and returns. Slower businesses can sync at scheduled intervals. The faster products sell, the shorter the gap must be.</p>
+<h2>Decision 3: rules for disagreements</h2>
+<p>Even with good integration, systems sometimes disagree, for example after a failed sync or manual adjustment. Define rules in advance: the source system wins, mismatches trigger alerts, and someone investigates within a set time. Without rules, teams argue about which number is right.</p>
+<h2>Practical requirements</h2>
+<ul>
+<li>Common item codes across all systems.</li>
+<li>Clear stock statuses: available, reserved, in transit, damaged, returned awaiting inspection.</li>
+<li>Logged adjustments with reasons and approvals.</li>
+<li>Regular cycle counts to keep the source accurate.</li>
+</ul><!--x:end--></div>
   <div class="art-cta"><p><em>We start by identifying the one system that should own your stock number, then connect everything else to read from it — rather than building another parallel copy.</em></p></div>
   
 <style>
@@ -359,7 +372,7 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 .art-faq-item b{display:block;font-size:16px;font-weight:600;color:#111;margin-bottom:8px}
 .art-faq-item p{font:400 15.5px/1.65 'Plus Jakarta Sans',sans-serif;color:#3A3F4D;margin:0}
 </style>
-<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What&#x27;s the core issue with what &quot;one view of stock&quot; actually requires behind the scenes?</b><p>&quot;We just need everyone to see the same stock number&quot; sounds like a simple request. Behind it is usually a handful of separate systems — a warehouse system, an accounting system, a sales channel, maybe a distributor portal — each with its own copy of the truth, updating on its own schedule.</p></div><div class="art-faq-item"><b>What actually fixes this?</b><p>Which system owns the number. Usually whichever system is closest to the physical stock movement — the warehouse or inventory system, not the sales channel.</p></div><div class="art-faq-item"><b>How does Meridian Gray help with this?</b><p>We start by identifying the one system that should own your stock number, then connect everything else to read from it — rather than building another parallel copy.</p></div></div>
+<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What is a single source of truth for inventory?</b><p>One system that owns the stock number, with every other system reading from it instead of keeping separate counts.</p></div><div class="art-faq-item"><b>How often should stock data sync between systems?</b><p>As close to real time as possible for fast movers, triggered by dispatch, receipt and returns; slower businesses can use scheduled syncs.</p></div><div class="art-faq-item"><b>What happens when inventory systems disagree?</b><p>Predefined rules should decide: usually the source system wins, mismatches trigger alerts and someone investigates promptly.</p></div></div>
   <div class="art-related"><h4>Related reading</h4><div class="art-related-list"><a class="art-related-card" href="/blog-what-a-connected-system-actually-looks-like-for-a-logistics-"><small>Industry · Logistics &amp; 3PL</small><b>What a connected system actually looks like for a logistics or 3PL business</b></a><a class="art-related-card" href="/blog-fleet-and-driver-coordination-without-spreadsheets"><small>Industry · Logistics &amp; 3PL</small><b>Fleet and driver coordination without spreadsheets</b></a><a class="art-related-card" href="/blog-multi-warehouse-routing-and-cost-visibility"><small>Industry · Logistics &amp; 3PL</small><b>Multi-warehouse routing and cost visibility</b></a></div></div>
   <a class="art-back" href="/what-we-think">&larr; Back to What We Think</a>
 </article></main>
