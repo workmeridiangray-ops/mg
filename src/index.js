@@ -36,10 +36,10 @@ const BYPASS_PATHS = new Set([
 
 export default {
 	async fetch(request, env) {
-		const path = new URL(request.url).pathname;
+		const { pathname: path, hostname: host } = new URL(request.url);
 		const redirect = canonicalRedirect(request);
-		if (redirect) return withSecurityHeaders(redirect, path);
-		return withSecurityHeaders(await handleRequest(request, env), path);
+		if (redirect) return withSecurityHeaders(redirect, path, host);
+		return withSecurityHeaders(await handleRequest(request, env), path, host);
 	},
 };
 
@@ -52,11 +52,19 @@ export default {
 // (The static-asset layer alone answers these with 307 "temporary"
 // redirects or plain 200s, which Google treats as duplicate pages.)
 const CANONICAL_HOST = "www.meridiangray.in";
+const WORKERS_DEV_HOST = "mg.work-meridiangray.workers.dev";
 
 function canonicalRedirect(request) {
 	if (request.method !== "GET" && request.method !== "HEAD") return null;
 	const url = new URL(request.url);
-	// Only touch the production domains -- leave *.workers.dev / previews alone.
+	// The Worker's own workers.dev address is a full copy of the site: send it home.
+	if (url.hostname === WORKERS_DEV_HOST) {
+		return new Response(null, {
+			status: 301,
+			headers: { Location: `https://${CANONICAL_HOST}${url.pathname.replace(/\.html$/i, "")}${url.search}` },
+		});
+	}
+	// Only touch the production domains -- leave preview deployments alone.
 	if (url.hostname !== CANONICAL_HOST && url.hostname !== "meridiangray.in") return null;
 	if (url.pathname.startsWith("/auth/")) return null;
 
@@ -74,7 +82,7 @@ function canonicalRedirect(request) {
 	});
 }
 
-function withSecurityHeaders(response, currentPath = "") {
+function withSecurityHeaders(response, currentPath = "", currentHost = "") {
 	const res = new Response(response.body, response);
 	// Declare the encoding at the HTTP level so crawlers never have to guess.
 	const type = res.headers.get("content-type") || "";
@@ -90,6 +98,8 @@ function withSecurityHeaders(response, currentPath = "") {
 	res.headers.set("X-Frame-Options", "SAMEORIGIN");
 	res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
 	res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+	// Preview deployments (any other *.workers.dev host) must never be indexed.
+	if (currentHost.endsWith(".workers.dev")) res.headers.set("X-Robots-Tag", "noindex, nofollow");
 	return res;
 }
 
@@ -104,6 +114,8 @@ const handler = {
 		}
 
 		if (url.pathname.startsWith("/auth/")) {
+			// Sign-in and preview links only exist while the pre-launch gate is on.
+			if (!isGateOn(env)) return env.ASSETS.fetch(new Request(new URL("/__not_found__", url), request));
 			return handleAuth(request, env, url);
 		}
 
