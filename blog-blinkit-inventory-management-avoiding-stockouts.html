@@ -325,7 +325,27 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
   <span class="art-cat">Guide &middot; Blinkit</span>
   <h1 class="art-h1">Blinkit Inventory Management: Avoiding Stockouts</h1>
   <div class="art-meta">Published <time datetime="2026-11-06">6 Nov 2026</time> &middot; Updated <time datetime="2026-11-21">21 Nov 2026</time> &middot; 2 min read &middot; Meridian Gray</div>
-  <div class="art-body"><p>Stockouts hurt more on Blinkit than on traditional e-commerce, because a dark store running out of your product doesn't just mean a missed sale — it can mean reduced visibility and shelf space allocation going forward.</p><p><strong>Demand forecasting needs to be store-specific, not just city-level.</strong> Aggregate numbers can mask one dark store consistently selling out while a nearby one sits overstocked.</p><p><strong>Replenishment cycles need to be tighter than traditional warehouse restocking</strong>, given the smaller per-store inventory volumes typical of this model.</p><p><strong>Buffer stock needs balance.</strong> Too little risks stockouts during demand spikes; too much ties up capital and can displace faster-moving alternatives in limited shelf space.</p><p><strong>Seasonal and event-driven demand spikes need advance planning</strong> — festive periods or weather-driven demand shifts can create short-term surges a standard replenishment cadence won't catch in time.</p><p><strong>Monitoring needs to be frequent, not periodic.</strong> Weekly reviews are often too infrequent for fast-moving items — near-daily monitoring catches stockout risk before it becomes lost sales.</p></div>
+  <div class="art-body"><p>Stockouts hurt more on Blinkit than on traditional e-commerce, because a dark store running out of your product doesn't just mean a missed sale — it can mean reduced visibility and shelf space allocation going forward.</p><p><strong>Demand forecasting needs to be store-specific, not just city-level.</strong> Aggregate numbers can mask one dark store consistently selling out while a nearby one sits overstocked.</p><p><strong>Replenishment cycles need to be tighter than traditional warehouse restocking</strong>, given the smaller per-store inventory volumes typical of this model.</p><p><strong>Buffer stock needs balance.</strong> Too little risks stockouts during demand spikes; too much ties up capital and can displace faster-moving alternatives in limited shelf space.</p><p><strong>Seasonal and event-driven demand spikes need advance planning</strong> — festive periods or weather-driven demand shifts can create short-term surges a standard replenishment cadence won't catch in time.</p><p><strong>Monitoring needs to be frequent, not periodic.</strong> Weekly reviews are often too infrequent for fast-moving items — near-daily monitoring catches stockout risk before it becomes lost sales.</p>
+<!--x:start--><h2>Setting reorder points that work</h2>
+<p>A simple reorder point for each SKU and store cluster is: average daily sales multiplied by replenishment lead time in days, plus safety stock. If a product sells 20 units a day in a cluster and replenishment takes three days, you need 60 units to cover the gap, plus a buffer for busy days. Recalculate weekly at first, because early sales data changes quickly, then monthly once demand settles.</p>
+<h2>A weekly inventory routine</h2>
+<ol>
+<li>Pull sales and stock-on-hand by SKU and location from the partner panel.</li>
+<li>Calculate days of cover: stock divided by average daily sales.</li>
+<li>Flag anything under your replenishment lead time as urgent.</li>
+<li>Flag anything with very high days of cover as a risk of expiry or wasted space.</li>
+<li>Check upcoming festivals, holidays and weather changes that will move demand.</li>
+<li>Confirm replenishment orders and delivery slots with the platform or your distributor.</li>
+</ol>
+<h2>Signals that demand is changing</h2>
+<ul>
+<li>Stockouts happening earlier in the week than before.</li>
+<li>Sudden rises in sales in particular areas, often after a promotion or local event.</li>
+<li>A competitor going out of stock, which can push their customers to you temporarily.</li>
+<li>Seasonal shifts, such as cold drinks in summer or specific foods around festivals.</li>
+</ul>
+<h2>Avoiding the opposite problem</h2>
+<p>Too much stock causes its own issues: expiry losses, wasted shelf space and cash tied up in inventory. Keep safety stock proportional to how reliable your replenishment is. If deliveries are dependable, you can hold less buffer; if they are not, fix the supply chain rather than permanently overstocking.</p><!--x:end--></div>
   <div class="art-cta"><p><em>This level of granular, frequent inventory monitoring across multiple dark stores is genuinely demanding operationally, which is why inventory and replenishment tracking is one of the most requested ongoing services from brands we work with on Blinkit.</em></p></div>
   <style>
 .art-related{max-width:760px;margin:60px auto 0;padding:0 24px}
@@ -337,6 +357,7 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 .art-related-card b{display:block;margin-top:6px;font-size:14.5px;font-weight:600;line-height:1.35}
 @media (max-width:760px){.art-related-list{grid-template-columns:1fr}}
 </style>
+  <div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>How do I prevent stockouts on Blinkit?</b><p>Set reorder points per SKU and location using average daily sales and replenishment lead time, add safety stock, review inventory weekly and plan ahead for festivals and seasonal spikes.</p></div><div class="art-faq-item"><b>What is days of cover in inventory management?</b><p>Days of cover is your current stock divided by average daily sales. It shows how long stock will last at the current sales rate and helps decide when to reorder.</p></div><div class="art-faq-item"><b>Is it better to overstock on quick commerce?</b><p>No. Excess stock leads to expiry losses, wasted shelf space and locked-up cash. Hold safety stock that matches how reliable your replenishment is.</p></div></div>
   <div class="art-related"><h4>Related reading</h4><div class="art-related-list"><a class="art-related-card" href="/blog-how-to-get-featured-in-blinkit-s-app-banners-and-category-pa"><small>Guide &middot; Blinkit</small><b>How to Get Featured in Blinkit&#x27;s App Banners and Category Pages</b></a><a class="art-related-card" href="/blog-blinkit-vs-zepto-vs-swiggy-instamart-where-should-your-brand"><small>Guide &middot; Blinkit</small><b>Blinkit vs Zepto vs Swiggy Instamart: Where Should Your Brand List First?</b></a><a class="art-related-card" href="/blog-managing-blinkit-returns-complaints-ratings-without-an-in-ho"><small>Guide &middot; Blinkit</small><b>Managing Blinkit Returns, Complaints &amp; Ratings Without an In-House Team</b></a></div></div>
   <a class="art-back" href="/what-we-think">&larr; Back to What We Think</a>
 </article></main>

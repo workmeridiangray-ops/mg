@@ -336,7 +336,27 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 <p>Automate the calculation and generation: correct tax application based on product and location rules, consistent formatting, immediate generation tied to the actual transaction rather than a batch run later. These are rule-based steps where consistency matters more than judgement.</p>
 <p>Keep a person reviewing anything outside the normal pattern: unusual discounts, manual price overrides, cross-border transactions, anything that doesn't fit the standard rule set. Automation should handle the 95% that's routine and clearly flag the 5% that genuinely needs a human decision — not attempt to automate judgement calls it isn't equipped to make.</p>
 <h2>The control that actually matters</h2>
-<p>The goal isn't removing human oversight from compliance — it's removing human oversight from the parts that don't need it, so the attention that's left goes to the transactions that actually require it.</p></div>
+<p>The goal isn't removing human oversight from compliance — it's removing human oversight from the parts that don't need it, so the attention that's left goes to the transactions that actually require it.</p>
+<!--x:start--><h2>What Indian businesses typically automate</h2>
+<ul>
+<li><strong>GST calculation:</strong> applying the right rate by HSN or SAC code, and the right tax type (CGST and SGST, or IGST) based on the place of supply.</li>
+<li><strong>E-invoicing:</strong> generating the invoice reference number and QR code through the e-invoice system for businesses above the applicable turnover threshold. Check the current threshold, as it has been lowered several times.</li>
+<li><strong>E-way bills:</strong> generating them automatically from invoice data when goods movement crosses the value limit.</li>
+<li><strong>Invoice numbering:</strong> sequential, gap-free series per financial year and per branch where needed.</li>
+<li><strong>Sending and reminders:</strong> emailing or WhatsApping invoices and payment reminders as soon as they are created.</li>
+</ul>
+<h2>Controls to keep in place</h2>
+<p>Automation makes errors consistent, so a wrong rule repeats on every invoice. Build in a few safeguards:</p>
+<ul>
+<li>A master list of products and services with HSN or SAC codes and GST rates, owned and reviewed by one person.</li>
+<li>Exception reports for invoices with manual overrides, unusual discounts, zero-rated or exempt supplies and cross-border transactions.</li>
+<li>A monthly reconciliation of sales invoices against GST returns and the e-invoice portal.</li>
+<li>Access controls so only authorised staff can edit tax rules or cancel invoices.</li>
+</ul>
+<h2>Rolling it out safely</h2>
+<p>Start with your most common invoice type and run the automated process alongside the manual one for a few weeks, comparing results. Involve your accountant or CA early, especially for place-of-supply rules, credit notes and reverse charge cases. Once standard invoices match consistently, move to the next invoice type.</p>
+<h2>What you gain</h2>
+<p>Beyond saving time, automated invoicing gives you cleaner data. Sales, tax and receivables reports become reliable without manual clean-up, filing is faster, and audits are easier because every invoice follows the same rules and leaves a clear record.</p><!--x:end--></div>
   <div class="art-cta"><p><em>We automate the routine parts of invoicing and compliance while keeping a clear, visible flag on anything unusual — control isn't lost, it's redirected to where it's actually needed.</em></p></div>
   
 <style>
@@ -358,7 +378,7 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 .art-faq-item b{display:block;font-size:16px;font-weight:600;color:#111;margin-bottom:8px}
 .art-faq-item p{font:400 15.5px/1.65 'Plus Jakarta Sans',sans-serif;color:#3A3F4D;margin:0}
 </style>
-<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What&#x27;s the core issue with automating tax invoices and compliance without losing control?</b><p>Invoicing and tax compliance are two of the most common places businesses hesitate to automate — understandably, since mistakes here have real financial and legal consequences. But manual invoicing is exactly where repetitive, rule-based errors tend to hide, which is also exactly the kind of error automation is good at catching.</p></div><div class="art-faq-item"><b>What actually fixes this?</b><p>Automate the calculation and generation: correct tax application based on product and location rules, consistent formatting, immediate generation tied to the actual transaction rather than a batch run later. These are rule-based steps where consistency matters more than judgement.</p></div><div class="art-faq-item"><b>How does Meridian Gray help with this?</b><p>We automate the routine parts of invoicing and compliance while keeping a clear, visible flag on anything unusual — control isn&#x27;t lost, it&#x27;s redirected to where it&#x27;s actually needed.</p></div></div>
+<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>Can GST invoicing be fully automated?</b><p>Most of it can: tax calculation, invoice numbering, e-invoice and e-way bill generation and sending invoices. Keep human review for unusual cases such as overrides, exempt supplies and cross-border transactions.</p></div><div class="art-faq-item"><b>Who needs to generate GST e-invoices?</b><p>Businesses whose turnover exceeds the threshold set by the GST authorities, which has been reduced over time. Check the current threshold with your accountant or on the official GST portal.</p></div><div class="art-faq-item"><b>How do I avoid errors when automating invoices?</b><p>Keep a reviewed master list of HSN or SAC codes and rates, monitor exception reports, reconcile invoices with GST returns every month and limit who can change tax rules.</p></div></div>
   <div class="art-related"><h4>Related reading</h4><div class="art-related-list"><a class="art-related-card" href="/blog-vendor-sourcing-and-compliance-the-paperwork-problem-nobody-"><small>Framework · Compliance</small><b>Vendor sourcing and compliance — the paperwork problem nobody automates</b></a><a class="art-related-card" href="/blog-custom-software-vs-saas-vs-spreadsheets-a-founder-s-decision"><small>Guide · Technology</small><b>Custom software vs SaaS vs spreadsheets — a founder&#x27;s decision guide</b></a><a class="art-related-card" href="/blog-buyer-communication-after-booking-possession-updates-that-bu"><small>Industry · Construction &amp; Real Estate</small><b>Buyer communication after booking — possession updates that build trust</b></a></div></div>
   <a class="art-back" href="/what-we-think">&larr; Back to What We Think</a>
 </article></main>

@@ -336,7 +336,25 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 <h2>Where integrations earn their cost back fastest</h2>
 <p>Not every connection is equally valuable. The ones that tend to pay off quickest are the handovers that happen most often and that block the next step in a process until they're done — payment confirmation feeding into order fulfilment, a new lead feeding into the CRM, stock movement feeding into the sales channel. High-frequency, blocking handovers are where integration work earns its cost back fastest.</p>
 <h2>A caution worth stating plainly</h2>
-<p>Not everything needs to be integrated. A connection that happens once a month, reviewed by a person who catches errors easily, often isn't worth the engineering cost of full automation. The judgement call is frequency and risk — automate what happens often and where a mistake is expensive, and leave the rare, low-stakes handovers alone.</p></div>
+<p>Not everything needs to be integrated. A connection that happens once a month, reviewed by a person who catches errors easily, often isn't worth the engineering cost of full automation. The judgement call is frequency and risk — automate what happens often and where a mistake is expensive, and leave the rare, low-stakes handovers alone.</p>
+<!--x:start--><h2>Common integrations that pay off</h2>
+<ul>
+<li><strong>Website or marketplace orders into accounting software,</strong> so every sale creates an invoice and ledger entry without retyping.</li>
+<li><strong>Enquiry forms into a CRM,</strong> so every lead is captured with its source and assigned to someone immediately.</li>
+<li><strong>Payment gateway into order records,</strong> so a paid order is marked paid automatically and dispatch can start.</li>
+<li><strong>Courier tracking into customer messages,</strong> so customers receive updates without staff copying tracking numbers into WhatsApp.</li>
+<li><strong>Stock levels shared across sales channels,</strong> so one sale reduces availability everywhere.</li>
+</ul>
+<h2>How to scope an integration properly</h2>
+<p>Start by writing down exactly what moves between the two systems: which fields, in which direction, how often, and what should happen when something fails. For example, when a website order arrives, which customer details go to the accounting software, how tax is mapped, and what happens if the customer already exists. These questions sound basic, but they decide whether the integration saves time or creates new clean-up work.</p>
+<h2>Ways to connect systems</h2>
+<ul>
+<li><strong>Native integrations:</strong> built-in connections offered by the software itself. Quick to set up, but limited to what the vendor supports.</li>
+<li><strong>Integration platforms:</strong> tools that connect many apps with configurable workflows. Flexible and fast for common cases, with a monthly cost per workflow or task.</li>
+<li><strong>Custom integrations:</strong> code written against each system's API. Best for unusual workflows, high volumes or precise business rules, with a higher upfront cost and the need for maintenance.</li>
+</ul>
+<h2>Keeping integrations reliable</h2>
+<p>Every integration needs monitoring. APIs change, passwords expire and unusual data can break a workflow quietly. Set up alerts for failures, keep a log of what was transferred, and name an owner who checks it. A failed integration that nobody notices can be worse than no integration, because everyone assumes the data is moving.</p><!--x:end--></div>
   <div class="art-cta"><p><em>We map which handovers in your business are frequent and blocking before recommending any integration — connecting everything is rarely the goal; connecting what actually slows you down is.</em></p></div>
   
 <style>
@@ -358,7 +376,7 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
 .art-faq-item b{display:block;font-size:16px;font-weight:600;color:#111;margin-bottom:8px}
 .art-faq-item p{font:400 15.5px/1.65 'Plus Jakarta Sans',sans-serif;color:#3A3F4D;margin:0}
 </style>
-<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What&#x27;s the core issue with API integrations — the quiet fix behind &quot;connected&quot; businesses?</b><p>Nobody brags about their API integrations the way they brag about a new website. But ask any business that feels genuinely &quot;connected&quot; what actually changed, and the honest answer is usually a handful of integrations nobody outside the ops team ever notices.</p></div><div class="art-faq-item"><b>What actually fixes this?</b><p>An integration replaces the moment someone copies data from one system into another by hand. That sounds small until you count how often it happens: an order confirmed on the website gets re-typed into the accounting system. A payment received gets manually matched against an invoice. A new customer signed up through a form gets manually added to the CRM...</p></div><div class="art-faq-item"><b>How does Meridian Gray help with this?</b><p>We map which handovers in your business are frequent and blocking before recommending any integration — connecting everything is rarely the goal; connecting what actually slows you down is.</p></div></div>
+<div class="art-faq"><h2>Frequently asked</h2><div class="art-faq-item"><b>What is an API integration in simple terms?</b><p>It is an automatic connection that lets two software systems exchange data directly, so information such as orders, payments or leads moves between them without anyone copying it by hand.</p></div><div class="art-faq-item"><b>Which business integrations save the most time?</b><p>Usually the ones that remove daily manual re-entry: orders into accounting, enquiries into a CRM, payments into order records, tracking updates to customers and stock levels across sales channels.</p></div><div class="art-faq-item"><b>Should I use a tool like Zapier or build a custom integration?</b><p>Integration platforms are fast and affordable for common, low-volume workflows. Custom integrations make sense for high volumes, complex business rules or systems without ready-made connectors.</p></div></div>
   <div class="art-related"><h4>Related reading</h4><div class="art-related-list"><a class="art-related-card" href="/blog-what-to-build-first-website-crm-or-internal-tools"><small>Framework · Develop</small><b>What to build first — website, CRM or internal tools?</b></a><a class="art-related-card" href="/blog-why-connected-systems-starts-with-just-two-systems-talking-t"><small>Framework · Develop</small><b>Why &quot;connected systems&quot; starts with just two systems talking to each other</b></a><a class="art-related-card" href="/blog-managing-product-information-as-a-system-not-a-one-time-task"><small>Framework · Develop</small><b>Managing product information as a system, not a one-time task</b></a></div></div>
   <a class="art-back" href="/what-we-think">&larr; Back to What We Think</a>
 </article></main>
