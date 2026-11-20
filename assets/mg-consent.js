@@ -5,10 +5,17 @@
   function get() { try { return localStorage.getItem(K); } catch (e) { return null; } }
   function set(v) { try { localStorage.setItem(K, v); } catch (e) {} }
   function addScript(src) { var s = document.createElement('script'); s.async = true; s.src = src; document.head.appendChild(s); }
+  // Google Consent Mode v2: everything denied by default; flipped to granted
+  // only when the visitor accepts analytics. Ads storage always stays denied.
+  window.dataLayer = window.dataLayer || [];
+  window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+  window.gtag('consent', 'default', {
+    analytics_storage: 'denied', ad_storage: 'denied', ad_user_data: 'denied',
+    ad_personalization: 'denied', functionality_storage: 'granted', security_storage: 'granted'
+  });
   function loadAnalytics() {
     if (loaded) return; loaded = true;
-    window.dataLayer = window.dataLayer || [];
-    window.gtag = window.gtag || function () { window.dataLayer.push(arguments); };
+    window.gtag('consent', 'update', { analytics_storage: 'granted' });
     window.dataLayer.push({ 'gtm.start': Date.now(), event: 'gtm.js' });
     window.gtag('js', new Date()); window.gtag('config', 'G-033585W608');
     addScript('https://www.googletagmanager.com/gtm.js?id=GTM-P2J33CRL');
@@ -35,7 +42,17 @@
     var yes = document.getElementById('mg-cookie-ok'), no = document.getElementById('mg-cookie-no');
     var v = get();
     if (v === 'yes') loadAnalytics();
-    if (b && !v) b.style.display = 'block';
+    // Wait for the intro loader to lift so the notice doesn't sit on top of it.
+    if (b && !v) {
+      var root = document.documentElement, show = function () { b.style.display = 'block'; };
+      if (root.classList.contains('loading') && window.MutationObserver) {
+        var mo = new MutationObserver(function () {
+          if (!root.classList.contains('loading')) { mo.disconnect(); show(); }
+        });
+        mo.observe(root, { attributes: true, attributeFilter: ['class'] });
+        setTimeout(function () { mo.disconnect(); show(); }, 3000);
+      } else show();
+    }
     if (yes) yes.addEventListener('click', function () { set('yes'); if (b) b.style.display = 'none'; loadAnalytics(); });
     if (no) no.addEventListener('click', function () {
       var was = get() === 'yes'; set('no'); if (b) b.style.display = 'none';

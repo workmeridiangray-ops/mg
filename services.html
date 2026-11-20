@@ -1209,13 +1209,13 @@ dialog .status{color:#111111;font-weight:500}
 @media (max-width:860px){.ins{grid-template-columns:minmax(0,1fr)}.ins article,.ins article+article{padding:24px 0;border-left:0;border-bottom:1px solid var(--line)}}
 
 /* preloader (manual-style counter) */
-.loader{position:fixed;inset:0;z-index:200;background:#FFFFFF;color:var(--ink);display:flex;flex-direction:column;justify-content:space-between;padding:calc(18px + env(safe-area-inset-top,0px)) max(var(--gut),env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(var(--gut),env(safe-area-inset-left,0px));transition:transform 1s cubic-bezier(.76,0,.24,1)}
+.loader{position:fixed;inset:0;z-index:200;background:#FFFFFF;color:var(--ink);display:flex;flex-direction:column;justify-content:space-between;padding:calc(18px + env(safe-area-inset-top,0px)) max(var(--gut),env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(var(--gut),env(safe-area-inset-left,0px));transition:transform .55s cubic-bezier(.76,0,.24,1)}
 .loader.done{transform:translateY(-100%)}
 .loader .lmark{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%)}
 .loader .lmark .brand{border-left:0;padding-left:16px;position:relative;gap:8px}
-.loader .lmark .brand::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--aub);transform:scaleY(0);transform-origin:top;animation:lmBar .7s cubic-bezier(.76,0,.24,1) .15s forwards}
-.loader .lmark .wm{font-size:clamp(34px,5.4vw,78px);white-space:nowrap;display:block;clip-path:inset(0 100% 0 0);animation:lmWipe 1s cubic-bezier(.76,0,.24,1) .45s forwards}
-.loader .lmark .tag{white-space:nowrap;font-size:clamp(9px,1.05vw,15px);letter-spacing:.5em;opacity:0;transform:translateY(8px);animation:lmUp .8s cubic-bezier(.16,1,.3,1) 1.05s forwards}
+.loader .lmark .brand::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--aub);transform:scaleY(0);transform-origin:top;animation:lmBar .35s cubic-bezier(.76,0,.24,1) .05s forwards}
+.loader .lmark .wm{font-size:clamp(34px,5.4vw,78px);white-space:nowrap;display:block;clip-path:inset(0 100% 0 0);animation:lmWipe .5s cubic-bezier(.76,0,.24,1) .1s forwards}
+.loader .lmark .tag{white-space:nowrap;font-size:clamp(9px,1.05vw,15px);letter-spacing:.5em;opacity:0;transform:translateY(8px);animation:lmUp .4s cubic-bezier(.16,1,.3,1) .35s forwards}
 .loader .lmark .tag .dots b{font-weight:inherit;opacity:.15;animation:lmDot 1.2s steps(1) infinite}
 .loader .lmark .tag .dots b:nth-child(2){animation-delay:.15s}.loader .lmark .tag .dots b:nth-child(3){animation-delay:.3s}.loader .lmark .tag .dots b:nth-child(4){animation-delay:.45s}
 @keyframes lmBar{to{transform:scaleY(1)}}
@@ -1237,7 +1237,7 @@ html.loading body{overflow:hidden}
 @media (prefers-reduced-motion:reduce){.loader{display:none}}
 .logo-lock{position:relative;display:block;container-type:inline-size;line-height:0}
 .logo-lock img{display:block;width:100%;height:auto}
-.loader .lmark .logo-lock{width:min(420px,72vw);clip-path:inset(0 100% 0 0);animation:lmWipe 1s cubic-bezier(.76,0,.24,1) .3s forwards}
+.loader .lmark .logo-lock{width:min(420px,72vw);clip-path:inset(0 100% 0 0);animation:lmWipe .5s cubic-bezier(.76,0,.24,1) .1s forwards}
 .loader .lmark .logo-lock img{clip-path:none;animation:none;width:100%}
 /* hold page-load animations until the preloader lifts */
 html.loading .logo::before,html.loading .logo .wm,html.loading .logo .tag,html.loading .hero .w,html.loading .hero p,html.loading .hero .ctas,html.loading .sig *{animation-play-state:paused}
@@ -3589,12 +3589,12 @@ L.forEach((a,i)=>a.addEventListener('click',e=>{e.preventDefault();const t=S[i].
   try{sessionStorage.setItem('mgSeen','1')}catch(e){}
   root.classList.add('loading');
   const ld=document.getElementById('ld'),st=[...loader.querySelectorAll('.stages span')];
-  let fontsDone=!document.fonts;const fin=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1200))]):Promise.resolve();fin.then(()=>fontsDone=true);
-  const t0=performance.now(),D=1800;
+  let fontsDone=!document.fonts;const fin=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,500))]):Promise.resolve();fin.then(()=>fontsDone=true);
+  const t0=performance.now(),D=700;
   (function tick(now){let p=Math.max(0,Math.min(1,(now-t0)/D));if(!fontsDone)p=Math.min(p,.92);const n=Math.round(Math.pow(p,.7)*100);
     ld.textContent=n;loader.style.setProperty('--lp',(n/100).toFixed(3));st.forEach((s,i)=>s.classList.toggle('on',n>=Math.round((i+1)*100/(st.length+1))));
     if(n<100)requestAnimationFrame(tick);
-    else setTimeout(()=>{loader.classList.add('done');setTimeout(()=>root.classList.remove('loading'),250);setTimeout(()=>loader.remove(),1100)},280)})(t0);
+    else setTimeout(()=>{loader.classList.add('done');setTimeout(()=>root.classList.remove('loading'),100);setTimeout(()=>loader.remove(),600)},60)})(t0);
 })();
 
 (()=>{
@@ -4453,7 +4453,7 @@ addEventListener('keydown',e=>{if(busy)return;const k={ArrowDown:1,PageDown:1,' 
 addEventListener('load',find);find();
 })();
 </script>
-<div id="mg-cookie" role="region" aria-label="Cookie notice" style="position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;max-width:560px;margin:0 auto;background:#111;color:#fff;font:500 14px/1.5 'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);display:none;"><p style="margin:0 0 12px;color:rgba(255,255,255,.85)">We use essential storage to run this site and load fonts from Google. With your permission we also use Google Analytics, Google Tag Manager and Microsoft Clarity to understand how the site is used. See our <a href="/privacy" style="color:#8aa2ff;text-decoration:underline">Privacy Policy</a>.</p><button type="button" id="mg-cookie-ok" style="appearance:none;border:0;background:#244BDB;color:#fff;font:700 13px/1 inherit;padding:10px 16px;border-radius:8px;cursor:pointer;margin-right:8px">Accept analytics</button><button type="button" id="mg-cookie-no" style="appearance:none;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font:700 13px/1 inherit;padding:10px 16px;border-radius:8px;cursor:pointer">Essential only</button></div><script src="/assets/mg-consent.js"></script>
+<div id="mg-cookie" role="region" aria-label="Cookie notice" style="position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;max-width:560px;margin:0 auto;background:#111;color:#fff;font:500 14px/1.5 'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);display:none;"><p style="margin:0 0 12px;color:rgba(255,255,255,.85)">We use essential storage to run this site and load fonts from Google. With your permission we also use Google Analytics, Google Tag Manager and Microsoft Clarity to understand how the site is used. See our <a href="/privacy" style="color:#8aa2ff;text-decoration:underline">Privacy Policy</a>.</p><button type="button" id="mg-cookie-ok" style="appearance:none;border:0;background:#244BDB;color:#fff;font-family:inherit;font-weight:700;font-size:13px;line-height:1;padding:10px 16px;border-radius:8px;cursor:pointer;margin-right:8px">Accept analytics</button><button type="button" id="mg-cookie-no" style="appearance:none;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-family:inherit;font-weight:700;font-size:13px;line-height:1;padding:10px 16px;border-radius:8px;cursor:pointer">Essential only</button></div><script src="/assets/mg-consent.js"></script>
 
 <style id="pb-css">
 html body main .pb+*:not(#_){margin-top:0!important}html body main .pb+section:not(.pb):not(#_){padding-top:clamp(28px,3.5vw,48px)!important}

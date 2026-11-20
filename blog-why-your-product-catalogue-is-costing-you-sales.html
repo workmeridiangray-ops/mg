@@ -173,7 +173,7 @@ html body .eyebrow{font-size:var(--fs-label)!important;line-height:1.4!important
 <meta property="og:title" content="What We Think · Insights on Business Systems · Meridian Gray">
 <meta property="og:description" content="Practical guides, frameworks and reports on enquiries, automation, search visibility and connected systems, written from the work we do with growing businesses.">
 <meta property="og:type" content="website">
-<link rel="stylesheet" href="/assets/mg-site.76406239.css">
+<link rel="stylesheet" href="/assets/mg-site.62c91539.css">
 </head>
 <body>
 <div class="loader" id="loader" aria-hidden="true">
@@ -444,12 +444,12 @@ main.svc.st5>section,main.svc.st5>section+section,main.svc.st5>section:not(:firs
   try{sessionStorage.setItem('mgSeen','1')}catch(e){}
   root.classList.add('loading');
   const ld=document.getElementById('ld'),st=[...loader.querySelectorAll('.stages span')];
-  let fontsDone=!document.fonts;const fin=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,1200))]):Promise.resolve();fin.then(()=>fontsDone=true);
-  const t0=performance.now(),D=1800;
+  let fontsDone=!document.fonts;const fin=document.fonts&&document.fonts.ready?Promise.race([document.fonts.ready,new Promise(r=>setTimeout(r,500))]):Promise.resolve();fin.then(()=>fontsDone=true);
+  const t0=performance.now(),D=700;
   (function tick(now){let p=Math.max(0,Math.min(1,(now-t0)/D));if(!fontsDone)p=Math.min(p,.92);const n=Math.round(Math.pow(p,.7)*100);
     ld.textContent=n;loader.style.setProperty('--lp',(n/100).toFixed(3));st.forEach((s,i)=>s.classList.toggle('on',n>=Math.round((i+1)*100/(st.length+1))));
     if(n<100)requestAnimationFrame(tick);
-    else setTimeout(()=>{loader.classList.add('done');setTimeout(()=>root.classList.remove('loading'),250);setTimeout(()=>loader.remove(),1100)},280)})(t0);
+    else setTimeout(()=>{loader.classList.add('done');setTimeout(()=>root.classList.remove('loading'),100);setTimeout(()=>loader.remove(),600)},60)})(t0);
 })();
 
 (()=>{
@@ -1240,6 +1240,6 @@ addEventListener('load',find);find();
 })();
 </script>
 <script src="/assets/mg-config.js"></script><script src="/assets/mg-form.js" defer></script>
-<div id="mg-cookie" role="region" aria-label="Cookie notice" style="position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;max-width:560px;margin:0 auto;background:#111;color:#fff;font:500 14px/1.5 'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);display:none;"><p style="margin:0 0 12px;color:rgba(255,255,255,.85)">We use essential storage to run this site and load fonts from Google. With your permission we also use Google Analytics, Google Tag Manager and Microsoft Clarity to understand how the site is used. See our <a href="/privacy" style="color:#8aa2ff;text-decoration:underline">Privacy Policy</a>.</p><button type="button" id="mg-cookie-ok" style="appearance:none;border:0;background:#244BDB;color:#fff;font:700 13px/1 inherit;padding:10px 16px;border-radius:8px;cursor:pointer;margin-right:8px">Accept analytics</button><button type="button" id="mg-cookie-no" style="appearance:none;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font:700 13px/1 inherit;padding:10px 16px;border-radius:8px;cursor:pointer">Essential only</button></div><script src="/assets/mg-consent.js"></script>
+<div id="mg-cookie" role="region" aria-label="Cookie notice" style="position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;max-width:560px;margin:0 auto;background:#111;color:#fff;font:500 14px/1.5 'Plus Jakarta Sans','Helvetica Neue',Helvetica,Arial,sans-serif;border-radius:14px;padding:18px 20px;box-shadow:0 12px 40px rgba(0,0,0,.25);display:none;"><p style="margin:0 0 12px;color:rgba(255,255,255,.85)">We use essential storage to run this site and load fonts from Google. With your permission we also use Google Analytics, Google Tag Manager and Microsoft Clarity to understand how the site is used. See our <a href="/privacy" style="color:#8aa2ff;text-decoration:underline">Privacy Policy</a>.</p><button type="button" id="mg-cookie-ok" style="appearance:none;border:0;background:#244BDB;color:#fff;font-family:inherit;font-weight:700;font-size:13px;line-height:1;padding:10px 16px;border-radius:8px;cursor:pointer;margin-right:8px">Accept analytics</button><button type="button" id="mg-cookie-no" style="appearance:none;border:1px solid rgba(255,255,255,.35);background:transparent;color:#fff;font-family:inherit;font-weight:700;font-size:13px;line-height:1;padding:10px 16px;border-radius:8px;cursor:pointer">Essential only</button></div><script src="/assets/mg-consent.js"></script>
 </body>
 </html>
