@@ -15,6 +15,14 @@ Meridian Gray runs a free 5-minute Business Health Check that scores a company's
 - [Contact](https://www.meridiangray.in/where-to-find-us): Tell us what is slowing your business down. Email, call or WhatsApp Meridian Gray, send a 2-minute brief, or visit us at Center Point, B.B.D. Bagh, Kolkata.
 
 ## Insights — English
+- [AI for sales teams: what to automate first](https://www.meridiangray.in/blog-ai-for-sales-teams-what-to-automate-first)
+- [AI for accounts and finance teams: invoices, reconciliation and reports](https://www.meridiangray.in/blog-ai-for-accounts-and-finance-teams)
+- [AI-written content and SEO: what Google actually penalises](https://www.meridiangray.in/blog-ai-written-content-and-seo-what-google-penalises)
+- [Using AI to write product descriptions at scale](https://www.meridiangray.in/blog-using-ai-to-write-product-descriptions-at-scale)
+- [AI voice agents for calling leads: what works in India](https://www.meridiangray.in/blog-ai-voice-agents-for-calling-leads)
+- [AI and data privacy under the DPDP Act](https://www.meridiangray.in/blog-ai-and-data-privacy-under-the-dpdp-act)
+- [Building an internal AI assistant on your own documents](https://www.meridiangray.in/blog-building-an-internal-ai-assistant-on-your-own-documents)
+- [AI ad creatives: what works on Meta and what doesn't](https://www.meridiangray.in/blog-ai-ad-creatives-what-works-on-meta)
 - [How to write a website brief an agency can quote on](https://www.meridiangray.in/blog-how-to-write-a-website-brief-an-agency-can-quote-on)
 - [How to measure ROI from your website](https://www.meridiangray.in/blog-how-to-measure-roi-from-your-website)
 - [How to write B2B case studies that win deals](https://www.meridiangray.in/blog-how-to-write-b2b-case-studies-that-win-deals)
