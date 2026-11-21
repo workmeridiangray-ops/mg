@@ -74,6 +74,107 @@ const SCHEMA = [
     ip TEXT
   )`,
   `CREATE INDEX IF NOT EXISTS portal_audit_company ON portal_audit_log(company_id, at)`,
+
+  // ---- Phase 2: meetings, minutes (MoM), action items, messages ----
+  `CREATE TABLE IF NOT EXISTS portal_meetings (
+    id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    starts_at INTEGER,
+    duration_min INTEGER NOT NULL DEFAULT 45,
+    meet_url TEXT,
+    gcal_event_id TEXT,
+    status TEXT NOT NULL DEFAULT 'scheduled',
+    request_note TEXT,
+    requested_by TEXT,
+    cancel_reason TEXT,
+    created_by TEXT,
+    created_at INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS portal_meetings_company ON portal_meetings(company_id, starts_at)`,
+  `CREATE TABLE IF NOT EXISTS portal_agenda_items (
+    id TEXT PRIMARY KEY,
+    meeting_id TEXT NOT NULL,
+    company_id TEXT NOT NULL,
+    text TEXT NOT NULL,
+    author_id TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS portal_agenda_meeting ON portal_agenda_items(meeting_id)`,
+  `CREATE TABLE IF NOT EXISTS portal_minutes (
+    meeting_id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL,
+    attendees TEXT,
+    summary TEXT,
+    decisions TEXT,
+    next_steps TEXT,
+    status TEXT NOT NULL DEFAULT 'draft',
+    revision INTEGER NOT NULL DEFAULT 0,
+    published_at INTEGER,
+    published_by TEXT,
+    confirm_due_at INTEGER,
+    confirmed_at INTEGER,
+    confirmed_by TEXT,
+    confirmed_auto INTEGER NOT NULL DEFAULT 0,
+    correction_note TEXT,
+    correction_by TEXT,
+    correction_at INTEGER,
+    updated_at INTEGER NOT NULL
+  )`,
+  `CREATE TABLE IF NOT EXISTS portal_minutes_revisions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    meeting_id TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    snapshot TEXT NOT NULL,
+    published_at INTEGER NOT NULL,
+    published_by TEXT
+  )`,
+  `CREATE TABLE IF NOT EXISTS portal_action_items (
+    id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL,
+    meeting_id TEXT,
+    text TEXT NOT NULL,
+    owner_side TEXT NOT NULL DEFAULT 'client',
+    owner_name TEXT,
+    due_date TEXT,
+    status TEXT NOT NULL DEFAULT 'open',
+    published INTEGER NOT NULL DEFAULT 0,
+    sort INTEGER NOT NULL DEFAULT 0,
+    done_at INTEGER,
+    done_by TEXT,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS portal_actions_company ON portal_action_items(company_id, status)`,
+  `CREATE TABLE IF NOT EXISTS portal_threads (
+    id TEXT PRIMARY KEY,
+    company_id TEXT NOT NULL,
+    subject TEXT NOT NULL,
+    meeting_id TEXT,
+    created_by TEXT,
+    created_at INTEGER NOT NULL,
+    last_message_at INTEGER NOT NULL,
+    last_author_id TEXT,
+    last_author_staff INTEGER NOT NULL DEFAULT 0,
+    message_count INTEGER NOT NULL DEFAULT 0
+  )`,
+  `CREATE INDEX IF NOT EXISTS portal_threads_company ON portal_threads(company_id, last_message_at)`,
+  `CREATE TABLE IF NOT EXISTS portal_messages (
+    id TEXT PRIMARY KEY,
+    thread_id TEXT NOT NULL,
+    company_id TEXT NOT NULL,
+    author_id TEXT NOT NULL,
+    author_staff INTEGER NOT NULL DEFAULT 0,
+    body TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS portal_messages_thread ON portal_messages(thread_id, created_at)`,
+  `CREATE TABLE IF NOT EXISTS portal_reads (
+    user_id TEXT NOT NULL,
+    thread_id TEXT NOT NULL,
+    last_read_at INTEGER NOT NULL,
+    PRIMARY KEY (user_id, thread_id)
+  )`,
 ];
 
 let ready = false;

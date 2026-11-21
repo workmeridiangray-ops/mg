@@ -5,11 +5,12 @@ import { now, audit } from "./db.js";
 import { esc, fmtDate, appPage, pageHead, roleBadge, roleRadios, ROLE_LABEL, ROLE_HELP, ARROW, initials } from "./ui.js";
 import { html, redirect, readForm, clientIp, flashFrom, nonce } from "./http.js";
 import { addPerson, invitePerson, changeRole, removePerson, peopleOf } from "./admin.js";
+import { openClientActions, pendingMinutes, nextMeeting } from "./meetings.js";
+import { threadsForCompany, threadRows } from "./messages.js";
+import { fmtWhen, fmtDay, todayIST, relTime } from "./time.js";
 
 const SOON = {
   projects: ["Projects", "Milestones, deliverables and <em>where things stand.</em>", "Each project's phases, what's been delivered and what's next, with a clear timeline."],
-  meetings: ["Meetings", "Every meeting, <em>and what we agreed.</em>", "Book a call, see the agenda, and read the minutes afterwards, with action items for both sides."],
-  messages: ["Messages", "Conversations <em>on the work itself.</em>", "Discussions attached to the project, ticket or invoice they're about, so nothing gets lost in email."],
   tickets: ["Tickets", "Ask for something, <em>see it move.</em>", "Raise a request or report an issue, and follow it from open to done."],
   files: ["Files", "Everything we've shared, <em>in one place.</em>", "Deliverables, documents and assets, organised by project."],
   agreements: ["Agreements", "Proposals and contracts, <em>signed online.</em>", "Review and sign agreements, and download the signed copies any time."],
@@ -35,6 +36,25 @@ export async function clientRoute(request, env, ctx, mail, path) {
   if (path === "/" && method === "GET") {
     const people = await peopleOf(env, company.id);
     const first = (ctx.user.name || "").split(/\s+/)[0];
+    const [pend, acts, next, threads] = await Promise.all([
+      pendingMinutes(env, company.id),
+      openClientActions(env, company.id, 8),
+      nextMeeting(env, company.id),
+      threadsForCompany(env, ctx, company.id, 4),
+    ]);
+    const unread = threads.filter((t) => t.unread);
+    const today = todayIST();
+    const needs = [];
+    for (const mi of pend) {
+      needs.push(`<div class="row"><span class="bdg blue">Confirm</span><div class="grow"><b><a href="/meetings/${esc(mi.meeting_id)}">Minutes of “${esc(mi.title)}”</a></b><small>Confirm or raise a correction. Confirms automatically on ${esc(fmtWhen(mi.confirm_due_at))}.</small></div><a class="btn sm" href="/meetings/${esc(mi.meeting_id)}">Review</a></div>`);
+    }
+    for (const t of unread) {
+      needs.push(`<div class="row"><span class="bdg blue">Reply</span><div class="grow"><b><a href="${t.meeting_id ? `/meetings/${esc(t.meeting_id)}#discussion` : `/messages/${esc(t.id)}`}">${esc(t.subject)}</a></b><small>New message from Meridian Gray · ${esc(relTime(t.last_message_at))}</small></div></div>`);
+    }
+    for (const a of acts) {
+      const overdue = a.due_date && a.due_date < today;
+      needs.push(`<div class="row act">${ctx.viewAs ? '<span class="tick ro" aria-hidden="true"></span>' : `<form method="post" action="/meetings/${esc(a.meeting_id)}/actions/${esc(a.id)}?back=home" class="inline"><button class="tick" title="Mark as done" aria-label="Mark as done"></button></form>`}<div class="grow"><b>${esc(a.text)}</b><small>${a.owner_name ? esc(a.owner_name) + " · " : ""}from <a href="/meetings/${esc(a.meeting_id)}">${esc(a.meeting_title)}</a></small></div>${a.due_date ? `<span class="bdg ${overdue ? "red" : "grey"}">${overdue ? "Overdue · " : "Due "}${esc(fmtDay(a.due_date))}</span>` : ""}</div>`);
+    }
     const lastSignIns = people.filter((p) => p.last_login_at).length;
     return page({
       title: "Home",
@@ -45,10 +65,14 @@ export async function clientRoute(request, env, ctx, mail, path) {
         title: `${greeting()}${first && !ctx.viewAs ? `, ${esc(first)}` : ""}. <em>Here's where things stand.</em>`,
         lead: "Anything waiting on you shows up first. Everything else about our work together is one click away on the left.",
       })}
-      <div class="sec" style="margin-top:0"><div class="card-h"><h2>Needs your action</h2></div>
-        <div class="empty"><b>Nothing needs you right now.</b>When there's an agreement to sign, an invoice to pay, minutes to confirm or a question for you, it'll appear here first.</div></div>
+      <div class="sec needs" style="margin-top:0"><div class="card-h"><h2>Needs your action${needs.length ? ` <span class="cnt">${needs.length}</span>` : ""}</h2></div>
+        ${needs.length ? `<div class="rows">${needs.join("")}</div>` : `<div class="empty"><b>Nothing needs you right now.</b>When there's minutes to confirm, a message for you, an action on your side, or later an agreement to sign or an invoice to pay, it'll appear here first.</div>`}</div>
       <div class="grid g3 sec">
-        <div class="card"><div class="k">Next meeting</div><h3 style="margin-top:10px">None scheduled</h3><p class="small muted" style="margin:0 0 14px">Meetings, agendas and minutes will live here.</p><a class="btn sm" href="https://www.meridiangray.in/where-to-find-us" rel="noopener">Book a call ${ARROW}</a></div>
+        <div class="card"><div class="k">Next meeting</div>${
+          next
+            ? `<h3 style="margin-top:10px"><a href="/meetings/${esc(next.id)}" style="text-decoration:none">${esc(next.title)}</a></h3><p class="small muted" style="margin:0 0 14px"><span data-ts="${next.starts_at}">${esc(fmtWhen(next.starts_at))}</span></p><div class="actions">${next.meet_url ? `<a class="btn sm pri" href="${esc(next.meet_url)}" target="_blank" rel="noopener">Join ${ARROW}</a>` : ""}<a class="btn sm" href="/meetings/${esc(next.id)}">Agenda</a></div>`
+            : `<h3 style="margin-top:10px">None scheduled</h3><p class="small muted" style="margin:0 0 14px">Ask for a time and we'll confirm it.</p><a class="btn sm" href="/meetings#request">Ask for a meeting</a>`
+        }</div>
         <div class="card"><div class="k">Projects</div><h3 style="margin-top:10px">Being set up</h3><p class="small muted" style="margin:0">Your milestones and deliverables will appear here as soon as we add them.</p></div>
         ${
           canMoney
@@ -57,11 +81,13 @@ export async function clientRoute(request, env, ctx, mail, path) {
         }
       </div>
       <div class="grid g2 sec">
+        <div><div class="card-h"><h2>Recent conversations</h2><a class="small" href="/messages">All messages</a></div>${
+          threads.length ? threadRows(threads, ctx, "/messages") : `<div class="empty"><b>No conversations yet.</b><a href="/messages#new">Start one</a> any time; we reply here and by email.</div>`
+        }</div>
         <div class="card panel"><div class="k">Your Meridian Gray contacts</div>
           <div class="rows" style="margin-top:12px;border-top:0">
             <div class="row"><span class="av blue">MG</span><div class="grow"><b>Meridian Gray team</b><small><a href="mailto:info@meridiangray.in">info@meridiangray.in</a> · <a href="tel:+917972921514">+91 79729 21514</a></small></div></div>
-          </div><p class="small muted" style="margin:10px 0 0">Write or call any time. Questions about the work will soon be answerable right here, on the work itself.</p></div>
-        <div class="card"><div class="k">Your access</div><h3 style="margin-top:10px">${esc(ROLE_LABEL[ctx.role] || "Member")}${ctx.viewAs ? " (preview)" : ""}</h3><p class="small muted" style="margin:0 0 14px">${esc(ROLE_HELP[ctx.role] || "")}.</p><a class="btn sm" href="/team">${isOwner ? "Manage your team" : "See your team"}</a></div>
+          </div><p class="small muted" style="margin:10px 0 0">You're signed in as ${esc(ROLE_LABEL[ctx.role] || "Member")}${ctx.viewAs ? " (preview)" : ""}: ${esc((ROLE_HELP[ctx.role] || "").toLowerCase())}.</p></div>
       </div>`,
     });
   }
@@ -202,7 +228,7 @@ export async function accountRoute(request, env, ctx, path) {
       active: "account",
       crumbs: [["Account"]],
       body: `${pageHead({ eyebrow: "Account", title: `Your <em>details.</em>`, lead: "Your sign-in email can only be changed by us, since it's how the portal knows it's you." })}
-      <div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:24px;align-items:start">
+      <div class="split">
       <div class="card"><form class="f" method="post" action="/account">
         <div class="fld"><label>Sign-in email</label><input type="email" value="${esc(u.email)}" disabled></div>
         <div class="frow"><div class="fld"><label for="a_name">Name</label><input id="a_name" name="name" type="text" value="${esc(u.name)}" autocomplete="name"></div>

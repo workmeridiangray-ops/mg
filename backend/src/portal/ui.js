@@ -139,8 +139,8 @@ textarea{min-height:96px;resize:vertical}
 .actions{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 form.inline{display:inline}
 /* flash */
-.flash{border:1px solid var(--aub-soft);background:var(--aub-wash);color:var(--ink);padding:13px 16px;font-size:14px;margin-bottom:24px;display:flex;gap:10px;animation:fadeUp .5s var(--ease) both}
-.flash::before{content:"";width:3px;align-self:stretch;background:var(--aub);flex:none}
+.flash{position:relative;border:1px solid var(--aub-soft);background:var(--aub-wash);color:var(--ink);padding:13px 16px 13px 26px;font-size:14px;margin-bottom:24px;animation:fadeUp .5s var(--ease) both}
+.flash::before{content:"";position:absolute;left:12px;top:12px;bottom:12px;width:3px;background:var(--aub)}
 .flash.err{border-color:#efc1c8;background:#fdf1f3}.flash.err::before{background:var(--red)}
 /* auth pages */
 .auth{min-height:100vh;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr)}
@@ -157,6 +157,49 @@ form.inline{display:inline}
 .auth-box{width:100%;max-width:400px;animation:fadeUp .7s var(--ease) .1s both}
 .auth-box h1{font-size:34px}
 .note{font-size:12.5px;color:var(--mute);margin-top:18px;line-height:1.6}
+
+.split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:28px;align-items:start}
+@media (max-width:980px){.split{grid-template-columns:1fr}}
+/* phase 2: threads, messages, meetings, minutes */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+a.row{text-decoration:none;color:inherit;transition:background .2s}
+a.row.thread:hover{background:var(--panel)}
+a.row.thread{padding-left:10px;padding-right:10px}
+.row .dot{width:7px;height:7px;flex:none;background:transparent}
+.row.unread .dot{background:var(--aub)}.row.unread .grow b{color:var(--aub)}
+.nb{margin-left:auto;background:var(--aub);color:#fff;font-size:10.5px;font-weight:700;min-width:20px;height:20px;padding:0 6px;display:inline-grid;place-items:center;font-family:var(--sans)}
+.nav a.on .nb{background:#fff;color:var(--aub)}
+.cnt{display:inline-grid;place-items:center;min-width:24px;height:24px;padding:0 7px;background:var(--aub);color:#fff;font-size:12px;vertical-align:middle;margin-left:6px}
+.when-chip{width:62px;flex:none;border:1px solid var(--line);text-align:center;padding:6px 4px;background:#fff}
+.when-chip b{display:block;font-size:13px;letter-spacing:-.01em}.when-chip small{font-family:var(--mono);font-size:11px;color:var(--mute)}
+.msgs{display:grid;gap:18px;margin-bottom:22px}
+.msg{display:flex;gap:12px;align-items:flex-start}
+.msg-b{flex:1;min-width:0;border:1px solid var(--line);padding:14px 16px;background:#fff}
+.msg.mg .msg-b{background:var(--aub-wash);border-color:#d5ddf9}
+.msg-h{display:flex;align-items:center;gap:10px;margin-bottom:6px;flex-wrap:wrap}.msg-h b{font-size:13.5px}.msg-h .mono{margin-left:auto}
+.msg-t{font-size:14.5px;line-height:1.6;word-wrap:break-word}.msg-t a{color:var(--aub)}
+.reply textarea{min-height:110px}
+.mom{border:1px solid var(--line);padding:24px;background:#fff;animation:fadeUp .6s var(--ease) both}
+.mom-head{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--ink);margin-bottom:6px}
+.mom-sec{padding:16px 0;border-bottom:1px solid var(--line)}.mom-sec:last-of-type{border-bottom:0}
+.mom-list{margin:10px 0 0;padding-left:20px;display:grid;gap:6px;font-size:14.5px}
+.mom-sec .rows{margin-top:8px}
+.tick{width:22px;height:22px;border:1.5px solid var(--ink);background:#fff;cursor:pointer;flex:none;padding:0;position:relative;transition:background .2s}
+.tick.on{background:var(--aub);border-color:var(--aub)}
+.tick.on::after{content:"";position:absolute;left:6px;top:2px;width:6px;height:11px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+.tick.ro{cursor:default;border-color:var(--faint)}
+.tick:not(.ro):hover{border-color:var(--aub)}
+.row.act.done .grow b{text-decoration:line-through;color:var(--mute)}
+.agenda{margin:0;padding-left:20px;display:grid;gap:10px}.agenda li span{display:block;font-size:14.5px}.agenda li small{font-size:12px}
+details.card>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center}
+details.card>summary::-webkit-details-marker{display:none}
+details.card>summary::after{content:"+";font-size:20px;color:var(--mute)}details.card[open]>summary::after{content:"–"}
+.ai-head,.ai-row{display:grid;grid-template-columns:minmax(0,2.4fr) minmax(0,1.1fr) minmax(0,1fr) 150px;gap:8px}
+.ai-head{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--mute);font-weight:600;margin-bottom:6px}
+.ai-row{margin-bottom:8px}.ai-row input,.ai-row select{padding:9px 10px;font-size:14px}
+.local-t{color:var(--mute);font-size:.92em}
+.needs .row .grow b a{text-decoration:none}.needs .row .grow b a:hover{color:var(--aub)}
+@media (max-width:860px){.ai-head{display:none}.ai-row{grid-template-columns:1fr 1fr;padding-bottom:10px;border-bottom:1px solid var(--line)}.ai-row input[type=text]:first-of-type{grid-column:1/-1}}
 /* motion */
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @keyframes barIn{from{transform:scaleY(0)}to{transform:scaleY(1)}}
@@ -210,18 +253,21 @@ export function appPage({ title, nonce, ctx, active, crumbs = [], body, flash })
 
   let nav;
   if (staffView) {
+    const b = ctx.badges || {};
     const items = [
-      ["admin", "/admin", "Clients"],
-      ["log", "/admin/log", "Change log"],
-      ["staff", "/admin/staff", "Team"],
+      ["admin", "/admin", "Clients", 0],
+      ["meetings", "/admin/meetings", "Meetings", b.meetings],
+      ["messages", "/admin/messages", "Messages", b.messages],
+      ["log", "/admin/log", "Change log", 0],
+      ["staff", "/admin/staff", "Team", 0],
     ];
-    nav = `<div class="grp">Admin</div>` + items.map(([k, h, l], i) => `<a href="${h}" class="${active === k ? "on" : ""}"><span class="n">${n(i + 1)}</span>${l}</a>`).join("");
+    nav = `<div class="grp">Admin</div>` + items.map(([k, h, l, c], i) => `<a href="${h}" class="${active === k ? "on" : ""}"><span class="n">${n(i + 1)}</span>${l}${c ? `<span class="nb" aria-label="${c} need attention">${c}</span>` : ""}</a>`).join("");
   } else {
     const work = [
       ["home", "/", "Home", false],
       ["projects", "/projects", "Projects", true],
-      ["meetings", "/meetings", "Meetings", true],
-      ["messages", "/messages", "Messages", true],
+      ["meetings", "/meetings", "Meetings", false],
+      ["messages", "/messages", "Messages", false],
       ["tickets", "/tickets", "Tickets", true],
       ["files", "/files", "Files", true],
     ];
@@ -231,7 +277,8 @@ export function appPage({ title, nonce, ctx, active, crumbs = [], body, flash })
     ];
     const canMoney = viewAs || ["owner", "finance"].includes(ctx.role);
     let i = 0;
-    const link = ([k, h, l, soon]) => `<a href="${h}" class="${active === k ? "on" : ""}${soon ? " soon" : ""}"><span class="n">${n(++i)}</span>${l}</a>`;
+    const b = ctx.badges || {};
+    const link = ([k, h, l, soon]) => `<a href="${h}" class="${active === k ? "on" : ""}${soon ? " soon" : ""}"><span class="n">${n(++i)}</span>${l}${b[k] ? `<span class="nb">${b[k]}</span>` : ""}</a>`;
     nav = `<div class="grp">Work</div>${work.map(link).join("")}`;
     if (canMoney) nav += `<div class="grp">Money</div>${money.map(link).join("")}`;
     nav += `<div class="grp">Account</div>${link(["team", "/team", "Your team", false])}`;
@@ -269,6 +316,8 @@ export function appPage({ title, nonce, ctx, active, crumbs = [], body, flash })
 document.querySelectorAll('[data-autosubmit]').forEach(function(s){s.addEventListener('change',function(){s.form.submit()})});
 var mb=document.querySelector('[data-menu]');if(mb){mb.addEventListener('click',function(){var o=document.body.classList.toggle('nav-open');mb.setAttribute('aria-expanded',o)});document.addEventListener('click',function(e){if(document.body.classList.contains('nav-open')&&!e.target.closest('.side')&&!e.target.closest('[data-menu]'))document.body.classList.remove('nav-open')})}
 document.querySelectorAll('form[data-confirm]').forEach(function(f){f.addEventListener('submit',function(e){if(!window.confirm(f.getAttribute('data-confirm')))e.preventDefault()})});
+var ab=document.querySelector('[data-add-row]');if(ab){ab.addEventListener('click',function(){var c=document.getElementById('ai-count'),i=+c.value,t=document.getElementById('ai-tpl').innerHTML.split('__I__').join(i);document.getElementById('ai-rows').insertAdjacentHTML('beforeend',t);c.value=i+1})}
+if(new Date().getTimezoneOffset()!==-330){document.querySelectorAll('[data-ts]').forEach(function(e){var d=new Date(+e.getAttribute('data-ts')*1000);try{var s=d.toLocaleString(undefined,{weekday:'short',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',timeZoneName:'short'});e.insertAdjacentHTML('afterend',' <span class="local-t">('+s.replace(/[<>&]/g,'')+' your time)</span>')}catch(x){}})}
 document.querySelectorAll('tr[data-href]').forEach(function(r){r.addEventListener('click',function(e){if(!e.target.closest('a,button,form'))location.href=r.getAttribute('data-href')})});
 </script></body></html>`;
 }

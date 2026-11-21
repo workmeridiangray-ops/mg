@@ -4,6 +4,8 @@ import { now, newId, normEmail, isEmail, audit, IN_STATES } from "./db.js";
 import { esc, fmtDate, appPage, pageHead, roleBadge, roleRadios, ROLE_LABEL, ARROW, initials } from "./ui.js";
 import { html, redirect, readForm, clientIp, flashFrom, nonce } from "./http.js";
 import { isStaffEmail, createLoginToken, sendSignInEmail, INVITE_TTL } from "./auth.js";
+import { threadsForCompany, threadRows } from "./messages.js";
+import { fmtWhen, fmtDay, todayIST } from "./time.js";
 
 // GSTIN state codes → state, so a GSTIN fills in the state if it's left blank.
 const GST_STATE = {
@@ -219,7 +221,7 @@ export async function adminRoute(request, env, ctx, mail, path) {
         <div class="card stat"><div class="k">Active clients</div><div class="v">${stats.clients}</div><div class="s">${stats.usd} billed in USD</div></div>
         <div class="card stat"><div class="k">Client people</div><div class="v">${stats.people}</div><div class="s">with portal access</div></div>
         <div class="card stat"><div class="k">Signed in, 7 days</div><div class="v">${stats.active7}</div><div class="s">client people</div></div>
-        <div class="card stat panel"><div class="k">Coming next</div><div class="v" style="font-size:17px;margin-top:12px">Meetings &amp; MoM</div><div class="s">then billing and agreements</div></div>
+        <a class="card stat panel" href="/admin/meetings" style="text-decoration:none"><div class="k">Needs attention</div><div class="v">${(ctx.badges?.meetings || 0) + (ctx.badges?.messages || 0)}</div><div class="s">${ctx.badges?.meetings || 0} meeting tasks · ${ctx.badges?.messages || 0} unread</div></a>
       </div>
       <form method="get" action="/admin" class="actions" style="margin-bottom:16px"><input type="search" name="q" value="${esc(q)}" placeholder="Search by name, legal name or GSTIN" style="max-width:380px">${
         showArchived ? '<input type="hidden" name="archived" value="1">' : ""
@@ -327,6 +329,11 @@ export async function adminRoute(request, env, ctx, mail, path) {
     if (sub === "" && method === "GET") {
       const people = await peopleOf(env, company.id);
       const log = (await env.DB.prepare(`SELECT * FROM portal_audit_log WHERE company_id = ? ORDER BY id DESC LIMIT 12`).bind(company.id).all()).results || [];
+      const meetings = (await env.DB.prepare(`SELECT mt.*, mi.status AS minutes_status FROM portal_meetings mt LEFT JOIN portal_minutes mi ON mi.meeting_id = mt.id WHERE mt.company_id = ? ORDER BY mt.starts_at DESC LIMIT 6`).bind(company.id).all()).results || [];
+      const acts = (await env.DB.prepare(`SELECT a.*, mt.title AS meeting_title FROM portal_action_items a JOIN portal_meetings mt ON mt.id = a.meeting_id WHERE a.company_id = ? AND a.published = 1 AND a.status = 'open' ORDER BY a.due_date IS NULL, a.due_date LIMIT 12`).bind(company.id).all()).results || [];
+      const threads = await threadsForCompany(env, ctx, company.id, 5);
+      const today = todayIST();
+      const mStatus = (m) => m.status === "cancelled" ? "Cancelled" : m.status === "requested" ? "Requested" : m.minutes_status === "published" ? "Minutes to confirm" : m.minutes_status === "correction" ? "Correction raised" : m.minutes_status === "confirmed" ? "Confirmed" : m.minutes_status === "draft" ? "Minutes drafted" : m.starts_at + m.duration_min * 60 < Date.now() / 1000 ? "Needs minutes" : "Scheduled";
       const archived = company.status === "archived";
       const peopleHtml = people.length
         ? `<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Person</th><th>Role</th><th>Last sign-in</th><th></th></tr></thead><tbody>${people
@@ -362,10 +369,23 @@ export async function adminRoute(request, env, ctx, mail, path) {
           lead: company.legal_name ? esc(company.legal_name) : "",
           right: `${archived ? "" : `<form method="post" action="${base}/view-as" class="inline"><button class="btn pri">View as client ${ARROW}</button></form>`}<a class="btn" href="${base}/edit">Edit details</a>`,
         })}
-        <div class="grid" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:24px;align-items:start">
+        <div class="split">
           <div>
             <div class="card-h"><h2>People</h2><span class="muted small">${people.length} with access</span></div>
             ${peopleHtml}
+            <div class="sec"><div class="card-h"><h2>Meetings</h2><a class="btn sm" href="/admin/meetings/new?client=${esc(company.id)}">Schedule</a></div>${
+              meetings.length
+                ? `<div class="rows">${meetings.map((m) => `<a class="row thread" href="/admin/meetings/${esc(m.id)}"><div class="grow"><b>${esc(m.title)}</b><small>${m.starts_at ? esc(fmtWhen(m.starts_at)) : "Time to be confirmed"}</small></div><span class="bdg ${/Needs|Correction|Requested/.test(mStatus(m)) ? "amber" : "grey"}">${mStatus(m)}</span></a>`).join("")}</div>`
+                : `<div class="empty">No meetings yet.</div>`
+            }</div>
+            <div class="sec"><div class="card-h"><h2>Open action items</h2><span class="small muted">${acts.length} open</span></div>${
+              acts.length
+                ? `<div class="rows">${acts.map((a) => `<div class="row"><div class="grow"><b>${esc(a.text)}</b><small>${a.owner_side === "mg" ? "Meridian Gray" : esc(company.name)}${a.owner_name ? " · " + esc(a.owner_name) : ""} · <a href="/admin/meetings/${esc(a.meeting_id)}">${esc(a.meeting_title)}</a></small></div>${a.due_date ? `<span class="bdg ${a.due_date < today ? "red" : "grey"}">${a.due_date < today ? "Overdue · " : "Due "}${esc(fmtDay(a.due_date))}</span>` : ""}</div>`).join("")}</div>`
+                : `<div class="empty">Nothing open.</div>`
+            }</div>
+            <div class="sec"><div class="card-h"><h2>Conversations</h2><a class="btn sm" href="/admin/messages?new=${esc(company.id)}#new">New message</a></div>${
+              threads.length ? threadRows(threads, ctx, "/admin/messages") : `<div class="empty">No conversations yet.</div>`
+            }</div>
             <div class="card panel sec"><h3>Add a person</h3><p class="small muted" style="margin:0 0 14px">They sign in with this email. Owners can also add their own colleagues from inside the portal.</p>
               <form class="f" method="post" action="${base}/people">
                 <div class="frow"><div class="fld"><label for="ap_name">Name</label><input id="ap_name" name="name" type="text"></div><div class="fld"><label for="ap_email">Email *</label><input id="ap_email" name="email" type="email" required></div></div>

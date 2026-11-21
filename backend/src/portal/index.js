@@ -1,12 +1,14 @@
 // Meridian Gray client portal: entry point. Served on portal.meridiangray.in
 // by the same Worker (and D1 database) as the website backend.
 
-import { ensureSchema } from "./db.js";
+import { ensureSchema, now } from "./db.js";
 import { html, redirect, sameOrigin, nonce, securityHeaders } from "./http.js";
 import { authPage } from "./ui.js";
 import { handleLoginGet, handleLoginPost, handleVerifyGet, handleVerifyPost, handleLogout, loadContext } from "./auth.js";
 import { adminRoute } from "./admin.js";
 import { clientRoute, accountRoute } from "./client.js";
+import { clientMeetingsRoute, adminMeetingsRoute, settleMinutes } from "./meetings.js";
+import { clientMessagesRoute, adminMessagesRoute, unreadCount } from "./messages.js";
 
 export const PORTAL_HOSTS = ["portal.meridiangray.in"];
 
@@ -25,7 +27,27 @@ function notFound(request) {
   );
 }
 
-// deps: { sendEmail, emailButton, checkRateLimit } from the main backend.
+// Small numbers shown beside menu items.
+async function badges(env, ctx) {
+  const b = { messages: await unreadCount(env, ctx) };
+  if (ctx.user.is_staff && !ctx.viewAs) {
+    const r = await env.DB.prepare(
+      `SELECT (SELECT COUNT(*) FROM portal_meetings mt JOIN portal_companies c ON c.id = mt.company_id WHERE c.status = 'active' AND mt.status = 'requested') +
+              (SELECT COUNT(*) FROM portal_minutes mi JOIN portal_companies c ON c.id = mi.company_id WHERE c.status = 'active' AND mi.status = 'correction') +
+              (SELECT COUNT(*) FROM portal_meetings mt JOIN portal_companies c ON c.id = mt.company_id LEFT JOIN portal_minutes mi ON mi.meeting_id = mt.id
+                WHERE c.status = 'active' AND mt.status = 'scheduled' AND mt.starts_at + mt.duration_min * 60 < ? AND (mi.meeting_id IS NULL OR mi.status = 'draft')) AS c`
+    )
+      .bind(now())
+      .first();
+    b.meetings = r?.c || 0;
+  } else if (ctx.company && !ctx.viewAs) {
+    const r = await env.DB.prepare(`SELECT COUNT(*) AS c FROM portal_minutes WHERE company_id = ? AND status = 'published'`).bind(ctx.company.id).first();
+    b.meetings = r?.c || 0;
+  }
+  return b;
+}
+
+// deps: { sendEmail, emailButton, checkRateLimit, getGoogleToken } from the main backend.
 export async function handlePortal(request, env, deps) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/+$/, "") || "/";
@@ -41,6 +63,7 @@ export async function handlePortal(request, env, deps) {
   await ensureSchema(env);
 
   const mail = { send: deps.sendEmail, button: deps.emailButton };
+  const cal = { getToken: () => (deps.getGoogleToken ? deps.getGoogleToken(env) : null) };
   const rateLimit = async (req, bucket, limit, windowSec) => (await deps.checkRateLimit(env, req, bucket, { limit, windowSec })).limited;
 
   // Public routes
@@ -49,21 +72,23 @@ export async function handlePortal(request, env, deps) {
   if (path === "/logout" && method === "POST") return handleLogout(request, env);
 
   const ctx = await loadContext(request, env);
-  if (!ctx) {
-    if (method === "GET") return redirect(request, "/login");
-    return redirect(request, "/login");
-  }
+  if (!ctx) return redirect(request, "/login");
 
   // Generous ceiling on writes per connection, against runaway scripts.
   if (method === "POST" && (await rateLimit(request, "portal-write", 120, 600))) {
     return new Response("Too many requests. Please wait a few minutes.", { status: 429 });
   }
 
+  await settleMinutes(env);
+  ctx.badges = await badges(env, ctx);
+
   const acc = await accountRoute(request, env, ctx, path);
   if (acc) return acc;
 
   if (path === "/admin" || path.startsWith("/admin/")) {
     if (!ctx.user.is_staff) return notFound(request);
+    if (path.startsWith("/admin/meetings")) return (await adminMeetingsRoute(request, env, ctx, mail, path, cal)) || notFound(request);
+    if (path.startsWith("/admin/messages")) return (await adminMessagesRoute(request, env, ctx, mail, path)) || notFound(request);
     return (await adminRoute(request, env, ctx, mail, path)) || notFound(request);
   }
 
@@ -71,5 +96,7 @@ export async function handlePortal(request, env, deps) {
     return path === "/" ? redirect(request, "/admin") : notFound(request);
   }
 
+  if (path === "/meetings" || path.startsWith("/meetings/")) return (await clientMeetingsRoute(request, env, ctx, mail, path)) || notFound(request);
+  if (path === "/messages" || path.startsWith("/messages/")) return (await clientMessagesRoute(request, env, ctx, mail, path)) || notFound(request);
   return (await clientRoute(request, env, ctx, mail, path)) || notFound(request);
 }

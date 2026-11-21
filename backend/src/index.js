@@ -1510,7 +1510,7 @@ export default {
     const url = new URL(request.url);
 
     if (isPortalRequest(request, env)) {
-      return handlePortal(request, env, { sendEmail: sendBrevoEmail, emailButton, checkRateLimit });
+      return handlePortal(request, env, { sendEmail: sendBrevoEmail, emailButton, checkRateLimit, getGoogleToken: getGoogleAccessToken });
     }
 
     if (request.method === "OPTIONS") {
