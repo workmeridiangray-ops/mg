@@ -71,7 +71,7 @@ const DOC_CSS = `.agr{border:1px solid var(--line);background:#fff;padding:40px 
 .agr h3{font-size:17px;margin:26px 0 8px;letter-spacing:-.01em}.agr h4{font-size:15px;margin:18px 0 6px}.agr p{margin:0 0 10px}.agr ul,.agr ol{margin:0 0 12px;padding-left:22px}
 .cert{margin-top:30px;border-top:1px solid var(--line);padding-top:18px;font-size:13px}.cert table{border-collapse:collapse;width:100%}.cert td{padding:6px 10px 6px 0;border-bottom:1px solid var(--line);vertical-align:top}.cert td:first-child{color:var(--mute);width:150px}
 .cert .fp{font-family:var(--mono);font-size:11px;word-break:break-all}
-@media (max-width:700px){.agr{padding:22px 18px}}
+@media screen and (max-width:700px){.agr{padding:22px 18px}}
 @media print{.agr{border:0;padding:0}}`;
 
 function agreementDoc(a, sigs) {

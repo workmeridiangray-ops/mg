@@ -157,7 +157,7 @@ const INV_CSS = `
 .inv-logo{font-weight:700;font-size:22px;letter-spacing:-.04em;border-left:3px solid #111;padding-left:10px;margin-bottom:14px}.inv-logo span{color:#5B606B}.inv-logo i{font-style:normal;color:#244BDB}
 .inv-seller{font-size:12.5px;color:#373a45}
 .inv-title{font-size:24px;font-weight:700;letter-spacing:-.03em;text-align:right;margin-bottom:10px}
-.inv-meta table{border-collapse:collapse;margin-left:auto;font-size:13px}.inv-meta td{padding:3px 0 3px 18px}.inv-meta td:first-child{color:#5B606B;padding-left:0}.inv-meta td:last-child{white-space:nowrap}
+.inv-meta table{border-collapse:collapse;margin-left:auto;font-size:13px}.inv-meta td{padding:3px 0 3px 18px}.inv-meta td:first-child{color:#5B606B;padding-left:0}.inv-meta td{white-space:nowrap}
 .inv-to{padding:22px 0}.inv-to .pre{white-space:pre-line;color:#373a45}
 .inv-lines{width:100%;border-collapse:collapse}.inv-lines th{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#5B606B;text-align:left;padding:9px 8px;border-bottom:1px solid #111;font-weight:600}
 .inv-lines td{padding:11px 8px;border-bottom:1px solid #E2E4EA;vertical-align:top}.inv .r{text-align:right;white-space:nowrap}
@@ -167,10 +167,10 @@ const INV_CSS = `
 .inv-lut{font-size:12px;color:#5B606B;margin:10px 0 0}
 .inv-notes,.inv-bank{margin-top:24px;padding-top:18px;border-top:1px solid #E2E4EA}.inv-bank table{border-collapse:collapse;font-size:13px}.inv-bank td{padding:2px 18px 2px 0}.inv-bank td:first-child{color:#5B606B}
 .inv-bank .small{font-size:12px;color:#5B606B;margin-top:6px}
-.inv-foot{margin-top:26px;padding-top:14px;border-top:1px solid #E2E4EA;font-size:11.5px;color:#8A8F9C}
+.inv-bank,.inv-sum,.inv-notes{break-inside:avoid}.inv-foot{margin-top:26px;padding-top:14px;border-top:1px solid #E2E4EA;font-size:11.5px;color:#8A8F9C}
 .inv-stamp{position:absolute;top:150px;right:44px;border:2px solid;padding:4px 14px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;font-size:13px;transform:rotate(-6deg);opacity:.85}
 .inv-stamp.paid{color:#1a7f3c}.inv-stamp.void{color:#C8102E}.inv-stamp.draft{color:#8A8F9C}
-@media (max-width:700px){.inv{padding:22px 18px}.inv-top,.inv-sum{flex-direction:column}.inv-title{text-align:left}.inv-meta table{margin-left:0}.inv-lines{font-size:12.5px}.inv-stamp{top:18px;right:18px}}
+@media screen and (max-width:700px){.inv{padding:22px 18px}.inv-top,.inv-sum{flex-direction:column}.inv-title{text-align:left}.inv-meta table{margin-left:0}.inv-lines{font-size:12.5px}.inv-stamp{top:18px;right:18px}}
 `;
 export const BILLING_CSS = INV_CSS;
 
