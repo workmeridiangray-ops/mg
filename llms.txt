@@ -15,6 +15,17 @@ Meridian Gray runs a free 5-minute Business Health Check that scores a company's
 - [Contact](https://www.meridiangray.in/where-to-find-us): Tell us what is slowing your business down. Email, call or WhatsApp Meridian Gray, send a 2-minute brief, or visit us at Center Point, B.B.D. Bagh, Kolkata.
 
 ## Insights — English
+- [ERPNext vs Zoho vs Tally for small businesses](https://www.meridiangray.in/blog-erpnext-vs-zoho-vs-tally-for-small-businesses)
+- [Wix vs Squarespace vs Webflow vs WordPress for Indian businesses](https://www.meridiangray.in/blog-wix-vs-squarespace-vs-webflow-vs-wordpress)
+- [Razorpay vs Cashfree vs PhonePe vs PayU: choosing a payment gateway](https://www.meridiangray.in/blog-razorpay-vs-cashfree-vs-phonepe-vs-payu)
+- [Interakt vs WATI vs AiSensy: choosing a WhatsApp Business platform](https://www.meridiangray.in/blog-wati-vs-interakt-vs-aisensy-whatsapp-platforms)
+- [Shiprocket vs Delhivery vs NimbusPost: choosing shipping for your online store](https://www.meridiangray.in/blog-shiprocket-vs-delhivery-vs-nimbuspost)
+- [Zoho Books vs Tally vs QuickBooks for Indian businesses](https://www.meridiangray.in/blog-zoho-books-vs-tally-vs-quickbooks)
+- [Flutter vs React Native: which should your business app use?](https://www.meridiangray.in/blog-flutter-vs-react-native-for-your-app)
+- [Next.js vs WordPress for business websites](https://www.meridiangray.in/blog-nextjs-vs-wordpress-for-business-websites)
+- [Meta ads vs Google ads: where should your business start?](https://www.meridiangray.in/blog-meta-ads-vs-google-ads-where-to-start)
+- [Mailchimp vs Brevo vs Zoho Campaigns for Indian businesses](https://www.meridiangray.in/blog-mailchimp-vs-brevo-vs-zoho-campaigns)
+- [Freshsales vs LeadSquared vs Zoho CRM for Indian sales teams](https://www.meridiangray.in/blog-freshsales-vs-leadsquared-vs-zoho-crm)
 - [Product photography and catalogue shoot cost: how to plan and budget](https://www.meridiangray.in/blog-product-photography-and-catalogue-shoot-cost)
 - [Corporate video production cost in India: what you're paying for](https://www.meridiangray.in/blog-corporate-video-production-cost-in-india)
 - [Website chat vs WhatsApp vs phone: which contact options to offer](https://www.meridiangray.in/blog-website-chat-vs-whatsapp-vs-phone-contact-options)
