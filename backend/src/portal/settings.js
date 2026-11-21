@@ -5,6 +5,7 @@ import { now, audit } from "./db.js";
 import { esc, appPage, pageHead, ARROW } from "./ui.js";
 import { html, redirect, readForm, clientIp, flashFrom, nonce } from "./http.js";
 import { IN_STATES } from "./db.js";
+import { portalOrigin } from "./auth.js";
 
 export const SETTING_FIELDS = [
   ["seller_legal_name", "Legal name", "Meridian Gray"],
@@ -76,7 +77,7 @@ export async function settingsRoute(request, env, ctx, path) {
     return `<div class="fld"><label for="${k}">${label}</label><input id="${k}" name="${k}" type="text" value="${esc(s[k])}">${opts.hint ? `<span class="hint">${opts.hint}</span>` : ""}</div>`;
   };
   const rzp = razorpayReady(env);
-  const hook = `${url.origin}/razorpay/webhook`;
+  const hook = `${portalOrigin(request)}/razorpay/webhook`;
   return html(
     request,
     appPage({

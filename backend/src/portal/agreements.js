@@ -11,7 +11,7 @@ import { esc, appPage, pageHead, ARROW } from "./ui.js";
 import { html, redirect, readForm, clientIp, flashFrom, nonce } from "./http.js";
 import { fmtWhen } from "./time.js";
 import { emailCompany, emailTeam, p, muted, quote } from "./notify.js";
-import { portalOrigin } from "./auth.js";
+import { portalOrigin, adminOrigin } from "./auth.js";
 
 export const KINDS = { proposal: "Proposal", sow: "Statement of work", contract: "Service agreement", nda: "Non-disclosure agreement", change_request: "Change request", other: "Agreement" };
 const MONEY_ROLES = ["owner", "finance"];
@@ -156,7 +156,7 @@ export async function clientAgreementsRoute(request, env, ctx, mail, path) {
         .bind(newId("sig"), a.id, ctx.user.id, ctx.user.email, name, String(f.title || "").trim().slice(0, 80) || null, hash, ip, (request.headers.get("User-Agent") || "").slice(0, 200), ts)
         .run();
       await audit(env, ctx, { companyId: company.id, action: "agreement.sign", summary: `${name} (${ctx.user.email}) signed “${a.title}”`, detail: { hash }, ip });
-      await emailTeam(env, mail, { subject: `[${company.name}] Signed: ${a.title}`, html: p(`<b>${esc(name)}</b> (${esc(ctx.user.email)}) signed <b>${esc(a.title)}</b> for ${esc(company.name)}.`) + mail.button("Open the agreement", `${origin}/admin/agreements/${a.id}`) });
+      await emailTeam(env, mail, { subject: `[${company.name}] Signed: ${a.title}`, html: p(`<b>${esc(name)}</b> (${esc(ctx.user.email)}) signed <b>${esc(a.title)}</b> for ${esc(company.name)}.`) + mail.button("Open the agreement", `${adminOrigin(request)}/admin/agreements/${a.id}`) });
       await emailCompany(env, mail, company.id, { roles: MONEY_ROLES, subject: `Signed copy: ${a.title}`, html: p(`<b>${esc(a.title)}</b> was signed by ${esc(name)} on ${esc(fmtWhen(ts))}. The signed copy, with its signature record, is in your portal.`) + mail.button("Download the signed copy", `${origin}/agreements/${a.id}/print`) });
       return redirect(request, `/agreements/${a.id}?m=signed`);
     }
@@ -165,7 +165,7 @@ export async function clientAgreementsRoute(request, env, ctx, mail, path) {
       if (!reason) return redirect(request, `/agreements/${a.id}`);
       await env.DB.prepare(`UPDATE portal_agreements SET status = 'declined', declined_at = ?, decline_reason = ?, updated_at = ? WHERE id = ? AND status = 'sent'`).bind(now(), reason, now(), a.id).run();
       await audit(env, ctx, { companyId: company.id, action: "agreement.decline", summary: `${ctx.user.email} declined “${a.title}”`, ip });
-      await emailTeam(env, mail, { subject: `[${company.name}] Declined: ${a.title}`, replyTo: ctx.user.email, html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> declined <b>${esc(a.title)}</b>:`) + quote(reason) + mail.button("Open the agreement", `${origin}/admin/agreements/${a.id}`) });
+      await emailTeam(env, mail, { subject: `[${company.name}] Declined: ${a.title}`, replyTo: ctx.user.email, html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> declined <b>${esc(a.title)}</b>:`) + quote(reason) + mail.button("Open the agreement", `${adminOrigin(request)}/admin/agreements/${a.id}`) });
       return redirect(request, `/agreements/${a.id}?m=declined`);
     }
     return null;

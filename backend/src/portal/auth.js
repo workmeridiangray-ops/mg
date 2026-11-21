@@ -48,19 +48,28 @@ export async function createLoginToken(env, email, ttl, ip = null) {
   return token;
 }
 
+// Two addresses, one system: clients use portal.meridiangray.in, the team
+// uses admin.meridiangray.in. Locally (dev) both are the dev server.
+export const CLIENT_HOST = "portal.meridiangray.in";
+export const ADMIN_HOST = "admin.meridiangray.in";
+const isLive = (request) => new URL(request.url).hostname.endsWith("meridiangray.in");
 export function portalOrigin(request) {
-  return new URL(request.url).origin;
+  return isLive(request) ? `https://${CLIENT_HOST}` : new URL(request.url).origin;
+}
+export function adminOrigin(request) {
+  return isLive(request) ? `https://${ADMIN_HOST}` : new URL(request.url).origin;
 }
 
 export async function sendSignInEmail(env, mail, request, email, token, { invite = false, companyName = "", inviterName = "" } = {}) {
-  const link = `${portalOrigin(request)}/auth/verify?t=${encodeURIComponent(token)}`;
+  const origin = (await isStaffEmail(env, email)) ? adminOrigin(request) : portalOrigin(request);
+  const link = `${origin}/auth/verify?t=${encodeURIComponent(token)}`;
   if (env.PORTAL_DEV === "1") console.log(`[portal dev] sign-in link for ${email}: ${link}`);
   const subject = invite ? `You've been given access to the Meridian Gray client portal` : `Your sign-in link for the Meridian Gray client portal`;
   const body = invite
     ? `<p style="margin:0 0 16px;">Hello,</p>
        <p style="margin:0 0 16px;">${inviterName ? esc(inviterName) + " has" : "We've"} given you access to the Meridian Gray client portal${companyName ? ` for <b>${esc(companyName)}</b>` : ""}. It's where you'll find our projects together, meeting minutes, agreements, invoices and requests.</p>
        <p style="margin:0 0 24px;">${mail.button("Open the portal", link)}</p>
-       <p style="margin:0;font-size:13px;color:#5B606B;">This link signs you in directly and works for 3 days. After that, go to ${esc(portalOrigin(request))} and enter this email address to get a fresh link. No password needed, ever.</p>`
+       <p style="margin:0;font-size:13px;color:#5B606B;">This link signs you in directly and works for 3 days. After that, go to ${esc(origin)} and enter this email address to get a fresh link. No password needed, ever.</p>`
     : `<p style="margin:0 0 16px;">Here's your sign-in link for the Meridian Gray client portal.</p>
        <p style="margin:0 0 24px;">${mail.button("Sign in to the portal", link)}</p>
        <p style="margin:0;font-size:13px;color:#5B606B;">The link works once and expires in 20 minutes. If you didn't ask for it, you can ignore this email; nobody can sign in without it.</p>`;
@@ -70,12 +79,22 @@ export async function sendSignInEmail(env, mail, request, email, token, { invite
 
 // ---------- pages ----------
 
-function loginBody({ email = "", sent = false, devLink = "", err = "" }) {
+function loginBody({ email = "", sent = false, devLink = "", err = "", team = false }) {
   if (sent) {
     return `<p class="eyebrow">Client portal</p><h1>Check <em>your email.</em></h1>
       <p class="lead" style="margin-bottom:18px">If <b>${esc(email)}</b> has access to the portal, a sign-in link is on its way. It works once and expires in 20 minutes.</p>
       <p class="note">Nothing arrived after a couple of minutes? Check spam or promotions, then <a href="/login">try again</a>. Still nothing? Write to <a href="mailto:info@meridiangray.in">info@meridiangray.in</a> and we'll sort out your access.</p>
       ${devLink ? `<p class="note"><b>Dev mode:</b> <a href="${esc(devLink)}">open the sign-in link</a></p>` : ""}`;
+  }
+  if (team) {
+    return `<p class="eyebrow">Meridian Gray · Team</p><h1>Team <em>sign-in.</em></h1>
+    <p class="lead" style="margin-bottom:26px">For the Meridian Gray team only. Enter your work email for a one-click sign-in link.</p>
+    ${err ? `<div class="flash err">${esc(err)}</div>` : ""}
+    <form class="f" method="post" action="/login">
+      <div class="fld"><label for="email">Work email</label><input id="email" type="email" name="email" value="${esc(email)}" autocomplete="email" required autofocus></div>
+      <button class="btn pri" type="submit">Email me a sign-in link</button>
+    </form>
+    <p class="note">Clients sign in at <a href="https://${CLIENT_HOST}">${CLIENT_HOST}</a>.</p>`;
   }
   return `<p class="eyebrow">Client portal</p><h1>Sign in to <em>your portal.</em></h1>
     <p class="lead" style="margin-bottom:26px">Enter the email we have for you and we'll send a one-click sign-in link. There's no password to remember.</p>
@@ -87,28 +106,31 @@ function loginBody({ email = "", sent = false, devLink = "", err = "" }) {
     <p class="note">Not a client yet? See what we do at <a href="https://www.meridiangray.in">meridiangray.in</a>.</p>`;
 }
 
-export async function handleLoginGet(request) {
+export async function handleLoginGet(request, scope = null) {
   const n = nonce();
   const url = new URL(request.url);
   const email = url.searchParams.get("email") || "";
   const err = url.searchParams.get("e") === "expired" ? "That link has expired or was already used. Enter your email for a fresh one." : "";
-  return html(request, authPage({ title: "Sign in", nonce: n, body: loginBody({ email, err }) }), n);
+  return html(request, authPage({ title: scope === "admin" ? "Team sign-in" : "Sign in", nonce: n, body: loginBody({ email, err, team: scope === "admin" }) }), n);
 }
 
-export async function handleLoginPost(request, env, mail, rateLimit) {
+// scope: "admin" on admin.meridiangray.in, "client" on portal.meridiangray.in, null in dev.
+export async function handleLoginPost(request, env, mail, rateLimit, scope = null) {
+  const team = scope === "admin";
   const n = nonce();
   if (!sameOrigin(request)) return new Response("Forbidden", { status: 403 });
   const f = await readForm(request);
   const email = normEmail(f.email);
   if (!isEmail(email)) {
-    return html(request, authPage({ title: "Sign in", nonce: n, body: loginBody({ email: f.email, err: "That doesn't look like a valid email address." }) }), n, { status: 400 });
+    return html(request, authPage({ title: "Sign in", nonce: n, body: loginBody({ email: f.email, team, err: "That doesn't look like a valid email address." }) }), n, { status: 400 });
   }
   if (await rateLimit(request, "portal-login", 10, 600)) {
-    return html(request, authPage({ title: "Sign in", nonce: n, body: loginBody({ email, err: "Too many attempts from this connection. Please wait a few minutes and try again." }) }), n, { status: 429 });
+    return html(request, authPage({ title: "Sign in", nonce: n, body: loginBody({ email, team, err: "Too many attempts from this connection. Please wait a few minutes and try again." }) }), n, { status: 429 });
   }
 
   let devLink = "";
-  if (await canSignIn(env, email)) {
+  // The team address only ever sends links to the team.
+  if ((await canSignIn(env, email)) && (!team || (await isStaffEmail(env, email)))) {
     // At most 3 links per address per 15 minutes, so nobody can flood an inbox.
     const recent = await env.DB.prepare(`SELECT COUNT(*) AS c FROM portal_login_tokens WHERE email = ? AND created_at > ?`)
       .bind(email, now() - 900)
@@ -143,7 +165,7 @@ export async function handleVerifyGet(request, env) {
   return html(request, authPage({ title: "Sign in", nonce: n, body }), n);
 }
 
-export async function handleVerifyPost(request, env) {
+export async function handleVerifyPost(request, env, scope = null) {
   if (!sameOrigin(request)) return new Response("Forbidden", { status: 403 });
   const f = await readForm(request);
   const t = f.t || "";
@@ -158,6 +180,9 @@ export async function handleVerifyPost(request, env) {
 
   const staff = await isStaffEmail(env, email);
   if (!staff && !(await canSignIn(env, email))) return redirect(request, "/login?e=expired");
+  // Each address only signs in its own people; a link opened on the wrong one goes to the right one.
+  if (scope === "admin" && !staff) return redirect(request, `${portalOrigin(request)}/login`);
+  if (scope === "client" && staff) return redirect(request, `${adminOrigin(request)}/login`);
 
   let user = await env.DB.prepare(`SELECT * FROM portal_users WHERE email = ?`).bind(email).first();
   if (!user) {

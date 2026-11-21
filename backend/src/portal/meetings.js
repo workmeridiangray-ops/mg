@@ -11,7 +11,7 @@ import { esc, appPage, pageHead, ARROW, initials } from "./ui.js";
 import { html, redirect, readForm, clientIp, flashFrom, nonce } from "./http.js";
 import { parseIST, istParts, fmtWhen, fmtDay, todayIST, relTime } from "./time.js";
 import { emailCompany, emailTeam, p, muted, quote } from "./notify.js";
-import { portalOrigin } from "./auth.js";
+import { portalOrigin, adminOrigin } from "./auth.js";
 import { createThread, postMessage, loadMessages, markRead, renderConversation, unreadCount } from "./messages.js";
 
 const CONFIRM_WINDOW = 48 * 3600;
@@ -366,14 +366,14 @@ async function meetingActions(request, env, ctx, mail, m, sub, { admin }) {
     if (sub === "/confirm") {
       await env.DB.prepare(`UPDATE portal_minutes SET status = 'confirmed', confirmed_at = ?, confirmed_by = ?, confirmed_auto = 0 WHERE meeting_id = ? AND status = 'published'`).bind(now(), ctx.user.id, m.id).run();
       await audit(env, ctx, { companyId: m.company_id, action: "minutes.confirm", summary: `${ctx.user.email} confirmed the minutes of “${m.title}” (revision ${minutes.revision})`, ip });
-      await emailTeam(env, mail, { subject: `[${m.company_name}] Minutes confirmed: ${m.title}`, html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> confirmed the minutes of <b>${esc(m.title)}</b>.`) + mail.button("Open the meeting", `${origin}/admin/meetings/${m.id}`) });
+      await emailTeam(env, mail, { subject: `[${m.company_name}] Minutes confirmed: ${m.title}`, html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> confirmed the minutes of <b>${esc(m.title)}</b>.`) + mail.button("Open the meeting", `${adminOrigin(request)}/admin/meetings/${m.id}`) });
       return redirect(request, `${base}?m=confirmed`);
     }
     const note = String(f.note || "").trim().slice(0, 2000);
     if (!note) return redirect(request, base);
     await env.DB.prepare(`UPDATE portal_minutes SET status = 'correction', correction_note = ?, correction_by = ?, correction_at = ? WHERE meeting_id = ?`).bind(note, ctx.user.id, now(), m.id).run();
     await audit(env, ctx, { companyId: m.company_id, action: "minutes.correction", summary: `${ctx.user.email} raised a correction on the minutes of “${m.title}”`, detail: { note }, ip });
-    await emailTeam(env, mail, { subject: `[${m.company_name}] Correction raised on minutes: ${m.title}`, replyTo: ctx.user.email, html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> asked for a correction to the minutes of <b>${esc(m.title)}</b>:`) + quote(note) + mail.button("Revise the minutes", `${origin}/admin/meetings/${m.id}/minutes`) });
+    await emailTeam(env, mail, { subject: `[${m.company_name}] Correction raised on minutes: ${m.title}`, replyTo: ctx.user.email, html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> asked for a correction to the minutes of <b>${esc(m.title)}</b>:`) + quote(note) + mail.button("Revise the minutes", `${adminOrigin(request)}/admin/meetings/${m.id}/minutes`) });
     return redirect(request, `${base}?m=correction`);
   }
   return null;
@@ -404,7 +404,7 @@ export async function clientMeetingsRoute(request, env, ctx, mail, path) {
       await emailTeam(env, mail, {
         subject: `[${company.name}] Meeting requested: ${title}`,
         replyTo: ctx.user.email,
-        html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> (${esc(company.name)}) asked for a meeting on <b>${esc(fmtWhen(start))}</b>.`) + quote(topic) + mail.button("Confirm or suggest another time", `${portalOrigin(request)}/admin/meetings/${id}`),
+        html: p(`<b>${esc(ctx.user.name || ctx.user.email)}</b> (${esc(company.name)}) asked for a meeting on <b>${esc(fmtWhen(start))}</b>.`) + quote(topic) + mail.button("Confirm or suggest another time", `${adminOrigin(request)}/admin/meetings/${id}`),
       });
       return redirect(request, `/meetings/${id}?m=requested`);
     }
@@ -529,7 +529,7 @@ export async function adminMeetingsRoute(request, env, ctx, mail, path, cal) {
       let meetUrl = cleanUrl(f.meet_url);
       let eventId = null;
       if (!meetUrl && f.auto_meet && start > now()) {
-        const ev = await gcalCreate(cal, { title: `${title} · ${company.name}`, start, duration, description: `Client portal: ${portalOrigin(request)}/admin/meetings` });
+        const ev = await gcalCreate(cal, { title: `${title} · ${company.name}`, start, duration, description: `Meridian Gray admin: ${adminOrigin(request)}/admin/meetings` });
         if (ev) ({ meetUrl, eventId } = ev);
       }
       const id = newId("mt");
@@ -589,7 +589,7 @@ export async function adminMeetingsRoute(request, env, ctx, mail, path, cal) {
     const wasRequest = m.status === "requested";
     const moved = start !== m.starts_at || duration !== m.duration_min;
     if (!meetUrl && f.auto_meet) {
-      const ev = await gcalCreate(cal, { title: `${title} · ${m.company_name}`, start, duration, description: `Client portal: ${portalOrigin(request)}${base}` });
+      const ev = await gcalCreate(cal, { title: `${title} · ${m.company_name}`, start, duration, description: `Meridian Gray admin: ${adminOrigin(request)}${base}` });
       if (ev) ({ meetUrl, eventId } = ev);
     } else if (eventId && moved) {
       await gcalPatch(cal, eventId, { start: { dateTime: new Date(start * 1000).toISOString() }, end: { dateTime: new Date((start + duration * 60) * 1000).toISOString() }, summary: `${title} · ${m.company_name}` });

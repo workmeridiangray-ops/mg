@@ -12,7 +12,7 @@ import { html, redirect, readForm, clientIp, flashFrom, nonce, securityHeaders }
 import { parseAmount, fmtMoney, toInput, amountInWords, supplyType, computeInvoice, fyLabel } from "./money.js";
 import { getSettings, razorpayReady, nextInvoiceNumber } from "./settings.js";
 import { emailCompany, emailTeam, p, muted } from "./notify.js";
-import { portalOrigin } from "./auth.js";
+import { portalOrigin, adminOrigin } from "./auth.js";
 import { todayIST, fmtWhen, relTime } from "./time.js";
 
 const MONEY_ROLES = ["owner", "finance"];
@@ -218,7 +218,7 @@ async function paymentEmails(env, mail, request, inv, amount, method) {
       p(fresh.status === "paid" ? "This invoice is now fully paid." : `Balance still due: <b>${esc(fmtMoney(balanceOf(fresh), inv.currency))}</b>.`) +
       mail.button("View the invoice", `${origin}/billing/invoices/${inv.id}`),
   });
-  await emailTeam(env, mail, { subject: `[${inv.company_name}] Payment ${fmtMoney(amount, inv.currency)} on ${inv.number}`, html: p(`${esc(METHODS[method] || method)} payment of <b>${esc(fmtMoney(amount, inv.currency))}</b> on <b>${esc(inv.number)}</b> from ${esc(inv.company_name)}.`) + mail.button("Open invoice", `${origin}/admin/billing/invoices/${inv.id}`) });
+  await emailTeam(env, mail, { subject: `[${inv.company_name}] Payment ${fmtMoney(amount, inv.currency)} on ${inv.number}`, html: p(`${esc(METHODS[method] || method)} payment of <b>${esc(fmtMoney(amount, inv.currency))}</b> on <b>${esc(inv.number)}</b> from ${esc(inv.company_name)}.`) + mail.button("Open invoice", `${adminOrigin(request)}/admin/billing/invoices/${inv.id}`) });
 }
 
 // ---------- Razorpay (payment links) ----------

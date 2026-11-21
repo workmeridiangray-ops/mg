@@ -4,7 +4,7 @@
 import { ensureSchema, now } from "./db.js";
 import { html, redirect, sameOrigin, nonce, securityHeaders } from "./http.js";
 import { authPage } from "./ui.js";
-import { handleLoginGet, handleLoginPost, handleVerifyGet, handleVerifyPost, handleLogout, loadContext } from "./auth.js";
+import { handleLoginGet, handleLoginPost, handleVerifyGet, handleVerifyPost, handleLogout, loadContext, CLIENT_HOST, ADMIN_HOST, portalOrigin, adminOrigin } from "./auth.js";
 import { adminRoute } from "./admin.js";
 import { clientRoute, accountRoute } from "./client.js";
 import { clientMeetingsRoute, adminMeetingsRoute, settleMinutes } from "./meetings.js";
@@ -13,7 +13,7 @@ import { clientBillingRoute, adminBillingRoute, handleRazorpayWebhook } from "./
 import { clientAgreementsRoute, adminAgreementsRoute } from "./agreements.js";
 import { settingsRoute } from "./settings.js";
 
-export const PORTAL_HOSTS = ["portal.meridiangray.in"];
+export const PORTAL_HOSTS = [CLIENT_HOST, ADMIN_HOST];
 
 export function isPortalRequest(request, env) {
   const host = new URL(request.url).hostname;
@@ -60,6 +60,7 @@ export async function handlePortal(request, env, deps) {
   const url = new URL(request.url);
   const path = url.pathname.replace(/\/+$/, "") || "/";
   const method = request.method;
+  const scope = url.hostname === ADMIN_HOST ? "admin" : url.hostname === CLIENT_HOST ? "client" : null;
 
   if (path === "/robots.txt") {
     return new Response("User-agent: *\nDisallow: /\n", { headers: { "Content-Type": "text/plain; charset=utf-8", "X-Robots-Tag": "noindex" } });
@@ -68,7 +69,7 @@ export async function handlePortal(request, env, deps) {
   if (method !== "GET" && method !== "POST" && method !== "HEAD") return new Response("Method not allowed", { status: 405 });
 
   // Razorpay server-to-server callback: no session, verified by signature.
-  if (path === "/razorpay/webhook" && method === "POST") {
+  if (path === "/razorpay/webhook" && method === "POST" && scope !== "admin") {
     await ensureSchema(env);
     return handleRazorpayWebhook(request, env, { send: deps.sendEmail, button: deps.emailButton });
   }
@@ -81,12 +82,15 @@ export async function handlePortal(request, env, deps) {
   const rateLimit = async (req, bucket, limit, windowSec) => (await deps.checkRateLimit(env, req, bucket, { limit, windowSec })).limited;
 
   // Public routes
-  if (path === "/login") return method === "POST" ? handleLoginPost(request, env, mail, rateLimit) : handleLoginGet(request);
-  if (path === "/auth/verify") return method === "POST" ? handleVerifyPost(request, env) : handleVerifyGet(request, env);
+  if (path === "/login") return method === "POST" ? handleLoginPost(request, env, mail, rateLimit, scope) : handleLoginGet(request, scope);
+  if (path === "/auth/verify") return method === "POST" ? handleVerifyPost(request, env, scope) : handleVerifyGet(request, env);
   if (path === "/logout" && method === "POST") return handleLogout(request, env);
 
   const ctx = await loadContext(request, env);
   if (!ctx) return redirect(request, "/login");
+  // Team on the client address → the team address, and the other way round.
+  if (scope === "client" && ctx.user.is_staff) return redirect(request, `${adminOrigin(request)}/admin`);
+  if (scope === "admin" && !ctx.user.is_staff) return redirect(request, `${portalOrigin(request)}/`);
 
   // Generous ceiling on writes per connection, against runaway scripts.
   if (method === "POST" && (await rateLimit(request, "portal-write", 120, 600))) {

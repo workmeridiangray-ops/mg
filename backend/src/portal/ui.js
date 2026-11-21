@@ -239,8 +239,8 @@ function docHead(title, nonce) {
 <link rel="icon" href="https://www.meridiangray.in/favicon-32x32.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"><style nonce="${nonce}">${CSS}</style></head>`;
 }
 
-const LOGO = (href = "/") =>
-  `<a class="logo" href="${href}" aria-label="Meridian Gray client portal home"><span class="wm">Meridian <span>Gray</span><i>.</i></span><span class="tag">Client portal</span></a>`;
+const LOGO = (href = "/", tag = "Client portal") =>
+  `<a class="logo" href="${href}" aria-label="Meridian Gray ${esc(tag.toLowerCase())} home"><span class="wm">Meridian <span>Gray</span><i>.</i></span><span class="tag">${esc(tag)}</span></a>`;
 
 // Public pages (login, check-your-email, verify).
 export function authPage({ title, body, nonce }) {
@@ -319,7 +319,7 @@ export function appPage({ title, nonce, ctx, active, crumbs = [], body, flash })
   const flashHtml = flash ? `<div class="flash${flash.err ? " err" : ""}" role="status">${esc(flash.msg)}</div>` : "";
 
   return `${docHead(title, nonce)}<body><a class="skip" href="#content">Skip to content</a>
-<div class="shell"><aside class="side" id="side">${LOGO(staffView ? "/admin" : "/")}${coBlock}<nav class="nav" aria-label="Portal">${nav}</nav>
+<div class="shell"><aside class="side" id="side">${LOGO(staffView ? "/admin" : "/", staffView ? "Team admin" : "Client portal")}${coBlock}<nav class="nav" aria-label="Portal">${nav}</nav>
 <div class="side-foot"><div class="me"><span class="av${user.is_staff ? " blue" : ""}">${esc(initials(user.name, user.email))}</span><span><b>${esc(user.name || "Your account")}</b><small>${esc(user.email)}</small></span></div>
 <a href="/account" style="margin-right:14px">Account</a><form method="post" action="/logout" class="inline"><button class="linkbtn">Sign out</button></form></div></aside>
 <div class="main">${viewBar}<div class="top"><div class="crumbs">${crumbHtml}</div><button class="btn sm pri menu-btn" type="button" data-menu aria-controls="side" aria-expanded="false">Menu</button></div>

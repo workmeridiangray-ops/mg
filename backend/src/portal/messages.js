@@ -6,7 +6,7 @@ import { esc, appPage, pageHead, initials, ARROW } from "./ui.js";
 import { html, redirect, readForm, clientIp, flashFrom, nonce } from "./http.js";
 import { relTime, fmtWhen } from "./time.js";
 import { emailCompany, emailTeam, p, muted, quote } from "./notify.js";
-import { portalOrigin } from "./auth.js";
+import { portalOrigin, adminOrigin } from "./auth.js";
 
 const MAX_BODY = 8000;
 
@@ -55,7 +55,7 @@ export async function postMessage(env, mail, request, ctx, thread, body, { linkP
     await emailTeam(env, mail, {
       subject: `[${company?.name || "Client"}] ${thread.subject}`,
       replyTo: ctx.user.email,
-      html: p(`<b>${esc(who)}</b> (${esc(company?.name || "")}) wrote in <b>${esc(thread.subject)}</b>:`) + quote(body) + mail.button("Open in the portal", origin + linkPathAdmin),
+      html: p(`<b>${esc(who)}</b> (${esc(company?.name || "")}) wrote in <b>${esc(thread.subject)}</b>:`) + quote(body) + mail.button("Open in the portal", adminOrigin(request) + linkPathAdmin),
     });
   }
   return true;

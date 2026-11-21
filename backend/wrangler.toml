@@ -3,11 +3,13 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 account_id = "348471314fadbd57e39a68b2eadb5984"
 
-# The website API stays on workers.dev; the client portal is served by this
-# same Worker on its own subdomain (Cloudflare creates the DNS record).
+# The website API stays on workers.dev. The client portal (portal.) and the
+# team's admin side (admin.) are served by this same Worker on their own
+# subdomains; Cloudflare creates the DNS records.
 workers_dev = true
 routes = [
-  { pattern = "portal.meridiangray.in", custom_domain = true }
+  { pattern = "portal.meridiangray.in", custom_domain = true },
+  { pattern = "admin.meridiangray.in", custom_domain = true }
 ]
 
 [[d1_databases]]
