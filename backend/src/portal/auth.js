@@ -79,7 +79,9 @@ export async function sendSignInEmail(env, mail, request, email, token, { invite
 
 // ---------- pages ----------
 
-function loginBody({ email = "", sent = false, devLink = "", err = "", team = false }) {
+const GOOGLE_BTN = `<a class="btn gbtn" href="/auth/google"><svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/><path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.97 10.72A5.4 5.4 0 0 1 3.68 9c0-.6.1-1.18.29-1.72V4.95H.96A9 9 0 0 0 0 9c0 1.45.35 2.83.96 4.05l3.01-2.33z"/><path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/></svg>Continue with Google</a><div class="or"><span>or get a link by email</span></div>`;
+
+function loginBody({ email = "", sent = false, devLink = "", err = "", team = false, google = false }) {
   if (sent) {
     return `<p class="eyebrow">Client portal</p><h1>Check <em>your email.</em></h1>
       <p class="lead" style="margin-bottom:18px">If <b>${esc(email)}</b> has access to the portal, a sign-in link is on its way. It works once and expires in 20 minutes.</p>
@@ -88,30 +90,37 @@ function loginBody({ email = "", sent = false, devLink = "", err = "", team = fa
   }
   if (team) {
     return `<p class="eyebrow">Meridian Gray · Team</p><h1>Team <em>sign-in.</em></h1>
-    <p class="lead" style="margin-bottom:26px">For the Meridian Gray team only. Enter your work email for a one-click sign-in link.</p>
-    ${err ? `<div class="flash err">${esc(err)}</div>` : ""}
+    <p class="lead" style="margin-bottom:26px">For the Meridian Gray team only. Continue with Google, or get a one-click sign-in link by email.</p>
+    ${err ? `<div class="flash err">${esc(err)}</div>` : ""}${google ? GOOGLE_BTN : ""}
     <form class="f" method="post" action="/login">
-      <div class="fld"><label for="email">Work email</label><input id="email" type="email" name="email" value="${esc(email)}" autocomplete="email" required autofocus></div>
+      <div class="fld"><label for="email">Work email</label><input id="email" type="email" name="email" value="${esc(email)}" autocomplete="email" required${google ? "" : " autofocus"}></div>
       <button class="btn pri" type="submit">Email me a sign-in link</button>
     </form>
     <p class="note">Clients sign in at <a href="https://${CLIENT_HOST}">${CLIENT_HOST}</a>.</p>`;
   }
   return `<p class="eyebrow">Client portal</p><h1>Sign in to <em>your portal.</em></h1>
-    <p class="lead" style="margin-bottom:26px">Enter the email we have for you and we'll send a one-click sign-in link. There's no password to remember.</p>
-    ${err ? `<div class="flash err">${esc(err)}</div>` : ""}
+    <p class="lead" style="margin-bottom:26px">Continue with Google, or enter the email we have for you and we'll send a one-click sign-in link. There's no password to remember.</p>
+    ${err ? `<div class="flash err">${esc(err)}</div>` : ""}${google ? GOOGLE_BTN : ""}
     <form class="f" method="post" action="/login">
-      <div class="fld"><label for="email">Work email</label><input id="email" type="email" name="email" value="${esc(email)}" autocomplete="email" required autofocus></div>
+      <div class="fld"><label for="email">Work email</label><input id="email" type="email" name="email" value="${esc(email)}" autocomplete="email" required${google ? "" : " autofocus"}></div>
       <button class="btn pri" type="submit">Email me a sign-in link</button>
     </form>
     <p class="note">Not a client yet? See what we do at <a href="https://www.meridiangray.in">meridiangray.in</a>.</p>`;
 }
 
-export async function handleLoginGet(request, scope = null) {
+export async function handleLoginGet(request, env, scope = null) {
   const n = nonce();
   const url = new URL(request.url);
   const email = url.searchParams.get("email") || "";
-  const err = url.searchParams.get("e") === "expired" ? "That link has expired or was already used. Enter your email for a fresh one." : "";
-  return html(request, authPage({ title: scope === "admin" ? "Team sign-in" : "Sign in", nonce: n, body: loginBody({ email, err, team: scope === "admin" }) }), n);
+  const e = url.searchParams.get("e");
+  const errs = {
+    expired: "That link has expired or was already used. Enter your email for a fresh one.",
+    google: "Google sign-in didn't complete. Try again, or use an email link below.",
+    google_cancel: "Google sign-in was cancelled.",
+    noaccess: `${email || "That Google account"} doesn't have access here. Sign in with the email address we invited, or write to info@meridiangray.in.`,
+    useteam: "Team accounts sign in here, at the team address.",
+  };
+  return html(request, authPage({ title: scope === "admin" ? "Team sign-in" : "Sign in", nonce: n, body: loginBody({ email: e === "noaccess" ? "" : email, err: errs[e] || "", team: scope === "admin", google: googleReady(env) }) }), n);
 }
 
 // scope: "admin" on admin.meridiangray.in, "client" on portal.meridiangray.in, null in dev.
@@ -184,6 +193,12 @@ export async function handleVerifyPost(request, env, scope = null) {
   if (scope === "admin" && !staff) return redirect(request, `${portalOrigin(request)}/login`);
   if (scope === "client" && staff) return redirect(request, `${adminOrigin(request)}/login`);
 
+  return startSession(env, request, email, staff, { method: "email link" });
+}
+
+// Creates the session once someone has proved they own the email address.
+async function startSession(env, request, email, staff, { method, googleName = null }) {
+  const ts = now();
   let user = await env.DB.prepare(`SELECT * FROM portal_users WHERE email = ?`).bind(email).first();
   if (!user) {
     // Only staff can arrive without a row; clients always have one.
@@ -194,7 +209,7 @@ export async function handleVerifyPost(request, env, scope = null) {
     await env.DB.prepare(`UPDATE portal_users SET is_staff = 1 WHERE id = ?`).bind(user.id).run();
     user.is_staff = 1;
   }
-  await env.DB.prepare(`UPDATE portal_users SET last_login_at = ? WHERE id = ?`).bind(ts, user.id).run();
+  await env.DB.prepare(`UPDATE portal_users SET last_login_at = ?, name = COALESCE(name, ?) WHERE id = ?`).bind(ts, googleName || null, user.id).run();
 
   const sid = randomToken(32);
   await env.DB.prepare(
@@ -202,7 +217,7 @@ export async function handleVerifyPost(request, env, scope = null) {
   )
     .bind(await sha256(sid), user.id, ts, ts + SESSION_DAYS * 86400, ts, clientIp(request), (request.headers.get("User-Agent") || "").slice(0, 200))
     .run();
-  await audit(env, user, { action: "auth.signin", summary: `${email} signed in`, ip: clientIp(request) });
+  await audit(env, user, { action: "auth.signin", summary: `${email} signed in (${method})`, ip: clientIp(request) });
   // Housekeeping: drop old tokens and expired sessions now and then.
   if (Math.random() < 0.1) {
     await env.DB.batch([
@@ -213,6 +228,80 @@ export async function handleVerifyPost(request, env, scope = null) {
   return redirect(request, user.is_staff ? "/admin" : "/", {
     "Set-Cookie": `${COOKIE}=${sid}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`,
   });
+}
+
+
+// ---------- Sign in with Google ----------
+// Standard OAuth 2.0 / OpenID Connect code flow. The ID token comes straight
+// from Google's token endpoint over TLS in exchange for our client secret, so
+// its contents are trusted after checking audience, issuer, expiry and that
+// Google has verified the email address. Google proves who someone is; the
+// portal still decides whether that email has access, exactly as for links.
+const GSTATE = "__Host-mgg";
+
+export function googleReady(env) {
+  return !!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);
+}
+
+export async function handleGoogleStart(request, env) {
+  if (!googleReady(env)) return redirect(request, "/login");
+  const state = randomToken(24);
+  const origin = new URL(request.url).origin;
+  const q = new URLSearchParams({
+    client_id: env.GOOGLE_CLIENT_ID,
+    redirect_uri: `${origin}/auth/google/callback`,
+    response_type: "code",
+    scope: "openid email profile",
+    state,
+    prompt: "select_account",
+    access_type: "online",
+  });
+  return redirect(request, `https://accounts.google.com/o/oauth2/v2/auth?${q}`, {
+    "Set-Cookie": `${GSTATE}=${state}; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=600`,
+  });
+}
+
+function decodeJwtPayload(jwt) {
+  const part = String(jwt || "").split(".")[1] || "";
+  const b64 = part.replace(/-/g, "+").replace(/_/g, "/") + "===".slice((part.length + 3) % 4);
+  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(b64), (c) => c.charCodeAt(0))));
+}
+
+export async function handleGoogleCallback(request, env, scope = null) {
+  const url = new URL(request.url);
+  const clear = { "Set-Cookie": `${GSTATE}=; Path=/; Secure; HttpOnly; SameSite=Lax; Max-Age=0` };
+  const fail = (code) => redirect(request, `/login?e=${code}`, clear);
+  const state = url.searchParams.get("state");
+  const code = url.searchParams.get("code");
+  if (url.searchParams.get("error")) return fail("google_cancel");
+  if (!googleReady(env) || !state || !code || state !== getCookie(request, GSTATE)) return fail("google");
+  let claims;
+  try {
+    const r = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ code, client_id: env.GOOGLE_CLIENT_ID, client_secret: env.GOOGLE_CLIENT_SECRET, redirect_uri: `${url.origin}/auth/google/callback`, grant_type: "authorization_code" }),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.id_token) {
+      console.log("google token exchange failed", r.status, JSON.stringify(d).slice(0, 300));
+      return fail("google");
+    }
+    claims = decodeJwtPayload(d.id_token);
+  } catch (e) {
+    console.log("google sign-in error", e && e.message);
+    return fail("google");
+  }
+  const okIss = claims.iss === "https://accounts.google.com" || claims.iss === "accounts.google.com";
+  if (!okIss || claims.aud !== env.GOOGLE_CLIENT_ID || !(claims.exp > now()) || !(claims.email_verified === true || claims.email_verified === "true")) return fail("google");
+  const email = normEmail(claims.email);
+  const staff = await isStaffEmail(env, email);
+  if (!staff && !(await canSignIn(env, email))) return redirect(request, `/login?e=noaccess&email=${encodeURIComponent(email)}`, clear);
+  if (scope === "admin" && !staff) return redirect(request, `/login?e=noaccess&email=${encodeURIComponent(email)}`, clear);
+  if (scope === "client" && staff) return redirect(request, `${adminOrigin(request)}/login?e=useteam`, clear);
+  const res = await startSession(env, request, email, staff, { method: "Google", googleName: String(claims.name || "").slice(0, 120) || null });
+  res.headers.append("Set-Cookie", clear["Set-Cookie"]);
+  return res;
 }
 
 export async function handleLogout(request, env) {

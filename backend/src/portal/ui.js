@@ -156,6 +156,8 @@ form.inline{display:inline}
 .auth-form{display:flex;align-items:center;justify-content:center;padding:44px}
 .auth-box{width:100%;max-width:400px;animation:fadeUp .7s var(--ease) .1s both}
 .auth-box h1{font-size:34px}
+.gbtn{width:100%;gap:12px;border-color:#CDD1DA}.gbtn svg{width:18px;height:18px;transform:none!important}.gbtn:hover{background:var(--panel);color:var(--ink);border-color:var(--ink)}
+.or{display:flex;align-items:center;gap:12px;margin:22px 0 18px;font-size:12px;color:var(--mute)}.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
 .note{font-size:12.5px;color:var(--mute);margin-top:18px;line-height:1.6}
 
 .split{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:28px;align-items:start}

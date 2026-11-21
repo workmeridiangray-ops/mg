@@ -4,7 +4,7 @@
 import { ensureSchema, now } from "./db.js";
 import { html, redirect, sameOrigin, nonce, securityHeaders } from "./http.js";
 import { authPage } from "./ui.js";
-import { handleLoginGet, handleLoginPost, handleVerifyGet, handleVerifyPost, handleLogout, loadContext, CLIENT_HOST, ADMIN_HOST, portalOrigin, adminOrigin } from "./auth.js";
+import { handleLoginGet, handleLoginPost, handleVerifyGet, handleVerifyPost, handleLogout, loadContext, handleGoogleStart, handleGoogleCallback, CLIENT_HOST, ADMIN_HOST, portalOrigin, adminOrigin } from "./auth.js";
 import { adminRoute } from "./admin.js";
 import { clientRoute, accountRoute } from "./client.js";
 import { clientMeetingsRoute, adminMeetingsRoute, settleMinutes } from "./meetings.js";
@@ -82,7 +82,9 @@ export async function handlePortal(request, env, deps) {
   const rateLimit = async (req, bucket, limit, windowSec) => (await deps.checkRateLimit(env, req, bucket, { limit, windowSec })).limited;
 
   // Public routes
-  if (path === "/login") return method === "POST" ? handleLoginPost(request, env, mail, rateLimit, scope) : handleLoginGet(request, scope);
+  if (path === "/login") return method === "POST" ? handleLoginPost(request, env, mail, rateLimit, scope) : handleLoginGet(request, env, scope);
+  if (path === "/auth/google" && method === "GET") return handleGoogleStart(request, env);
+  if (path === "/auth/google/callback" && method === "GET") return handleGoogleCallback(request, env, scope);
   if (path === "/auth/verify") return method === "POST" ? handleVerifyPost(request, env, scope) : handleVerifyGet(request, env);
   if (path === "/logout" && method === "POST") return handleLogout(request, env);
 
