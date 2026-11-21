@@ -15,7 +15,14 @@
  *   - ZOHO_CLIENT_ID       : secret, OAuth client id (optional — see README)
  *   - ZOHO_CLIENT_SECRET   : secret, OAuth client secret (optional — see README)
  *   - ZOHO_DC              : env var, Zoho data center, e.g. "in" / "com" / "eu"
+ *   - STAFF_EMAIL_HASHES   : env var, SHA-256 of each Meridian Gray team email
+ *                            allowed into the client portal's admin side
+ *
+ * The client portal (src/portal/) is served by this same Worker on
+ * portal.meridiangray.in; see src/portal/index.js.
  */
+
+import { handlePortal, isPortalRequest } from "./portal/index.js";
 
 function corsHeaders(env) {
   return {
@@ -1501,6 +1508,10 @@ async function pushHealthCheckToZoho(env, hc) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+
+    if (isPortalRequest(request, env)) {
+      return handlePortal(request, env, { sendEmail: sendBrevoEmail, emailButton, checkRateLimit });
+    }
 
     if (request.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders(env) });

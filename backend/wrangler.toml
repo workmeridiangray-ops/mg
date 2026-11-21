@@ -3,6 +3,13 @@ main = "src/index.js"
 compatibility_date = "2026-10-01"
 account_id = "348471314fadbd57e39a68b2eadb5984"
 
+# The website API stays on workers.dev; the client portal is served by this
+# same Worker on its own subdomain (Cloudflare creates the DNS record).
+workers_dev = true
+routes = [
+  { pattern = "portal.meridiangray.in", custom_domain = true }
+]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "meridiangray-db"
@@ -25,6 +32,10 @@ ALLOWED_ORIGIN = "https://www.meridiangray.in"
 # Zoho CRM data center — the part after "zoho." in your CRM login URL
 # (crm.zoho.in -> "in", crm.zoho.com -> "com", crm.zoho.eu -> "eu").
 ZOHO_DC = "in"
+# Client portal: who counts as Meridian Gray team (admin side). SHA-256 of each
+# lowercase email, comma-separated -- hashes, so no addresses sit in the repo.
+# To add someone: echo -n "name@example.com" | sha256sum
+STAFF_EMAIL_HASHES = "15a58f899b0219c94639acdb87d0fe8ddc675f5458eca843d67ae9527f023544,8ba06899ad09a29a2d4b8c83c9120be07937df706292e33bb88a0ac24e88c680,7f5528800a989c162ef63a977e1b8d2bbcd876681b7f85622173db8b0bf898bf"
 
 # Set the real secret after deploy with:
 #   npx wrangler secret put BREVO_API_KEY
