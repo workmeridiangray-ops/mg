@@ -9,6 +9,9 @@ import { adminRoute } from "./admin.js";
 import { clientRoute, accountRoute } from "./client.js";
 import { clientMeetingsRoute, adminMeetingsRoute, settleMinutes } from "./meetings.js";
 import { clientMessagesRoute, adminMessagesRoute, unreadCount } from "./messages.js";
+import { clientBillingRoute, adminBillingRoute, handleRazorpayWebhook } from "./billing.js";
+import { clientAgreementsRoute, adminAgreementsRoute } from "./agreements.js";
+import { settingsRoute } from "./settings.js";
 
 export const PORTAL_HOSTS = ["portal.meridiangray.in"];
 
@@ -40,9 +43,14 @@ async function badges(env, ctx) {
       .bind(now())
       .first();
     b.meetings = r?.c || 0;
+    b.agreements = (await env.DB.prepare(`SELECT COUNT(*) AS c FROM portal_agreements a JOIN portal_companies c ON c.id = a.company_id WHERE c.status = 'active' AND a.status = 'declined'`).first())?.c || 0;
   } else if (ctx.company && !ctx.viewAs) {
     const r = await env.DB.prepare(`SELECT COUNT(*) AS c FROM portal_minutes WHERE company_id = ? AND status = 'published'`).bind(ctx.company.id).first();
     b.meetings = r?.c || 0;
+    if (["owner", "finance"].includes(ctx.role)) {
+      b.agreements = (await env.DB.prepare(`SELECT COUNT(*) AS c FROM portal_agreements WHERE company_id = ? AND status = 'sent'`).bind(ctx.company.id).first())?.c || 0;
+      b.billing = (await env.DB.prepare(`SELECT COUNT(*) AS c FROM portal_invoices WHERE company_id = ? AND status = 'issued'`).bind(ctx.company.id).first())?.c || 0;
+    }
   }
   return b;
 }
@@ -58,6 +66,12 @@ export async function handlePortal(request, env, deps) {
   }
   if (path === "/favicon.ico") return Response.redirect("https://www.meridiangray.in/favicon.ico", 301);
   if (method !== "GET" && method !== "POST" && method !== "HEAD") return new Response("Method not allowed", { status: 405 });
+
+  // Razorpay server-to-server callback: no session, verified by signature.
+  if (path === "/razorpay/webhook" && method === "POST") {
+    await ensureSchema(env);
+    return handleRazorpayWebhook(request, env, { send: deps.sendEmail, button: deps.emailButton });
+  }
   if (method === "POST" && !sameOrigin(request)) return new Response("Forbidden", { status: 403, headers: securityHeaders("x", true) });
 
   await ensureSchema(env);
@@ -89,6 +103,9 @@ export async function handlePortal(request, env, deps) {
     if (!ctx.user.is_staff) return notFound(request);
     if (path.startsWith("/admin/meetings")) return (await adminMeetingsRoute(request, env, ctx, mail, path, cal)) || notFound(request);
     if (path.startsWith("/admin/messages")) return (await adminMessagesRoute(request, env, ctx, mail, path)) || notFound(request);
+    if (path.startsWith("/admin/billing")) return (await adminBillingRoute(request, env, ctx, mail, path)) || notFound(request);
+    if (path.startsWith("/admin/agreements")) return (await adminAgreementsRoute(request, env, ctx, mail, path)) || notFound(request);
+    if (path === "/admin/settings") return (await settingsRoute(request, env, ctx, path)) || notFound(request);
     return (await adminRoute(request, env, ctx, mail, path)) || notFound(request);
   }
 
@@ -98,5 +115,14 @@ export async function handlePortal(request, env, deps) {
 
   if (path === "/meetings" || path.startsWith("/meetings/")) return (await clientMeetingsRoute(request, env, ctx, mail, path)) || notFound(request);
   if (path === "/messages" || path.startsWith("/messages/")) return (await clientMessagesRoute(request, env, ctx, mail, path)) || notFound(request);
+  const money = ctx.viewAs || ["owner", "finance"].includes(ctx.role);
+  if (path === "/billing" || path.startsWith("/billing/")) {
+    if (!money) return redirect(request, "/");
+    return (await clientBillingRoute(request, env, ctx, mail, path)) || notFound(request);
+  }
+  if (path === "/agreements" || path.startsWith("/agreements/")) {
+    if (!money) return redirect(request, "/");
+    return (await clientAgreementsRoute(request, env, ctx, mail, path)) || notFound(request);
+  }
   return (await clientRoute(request, env, ctx, mail, path)) || notFound(request);
 }

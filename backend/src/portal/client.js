@@ -8,6 +8,9 @@ import { addPerson, invitePerson, changeRole, removePerson, peopleOf } from "./a
 import { openClientActions, pendingMinutes, nextMeeting } from "./meetings.js";
 import { threadsForCompany, threadRows } from "./messages.js";
 import { fmtWhen, fmtDay, todayIST, relTime } from "./time.js";
+import { openInvoices, balanceOf, fmtDate as fmtBillDate } from "./billing.js";
+import { pendingAgreements, KINDS } from "./agreements.js";
+import { fmtMoney } from "./money.js";
 
 const SOON = {
   projects: ["Projects", "Milestones, deliverables and <em>where things stand.</em>", "Each project's phases, what's been delivered and what's next, with a clear timeline."],
@@ -45,6 +48,15 @@ export async function clientRoute(request, env, ctx, mail, path) {
     const unread = threads.filter((t) => t.unread);
     const today = todayIST();
     const needs = [];
+    const invs = canMoney ? await openInvoices(env, company.id) : [];
+    const agrs = canMoney ? await pendingAgreements(env, company.id) : [];
+    for (const a of agrs) {
+      needs.push(`<div class="row"><span class="bdg blue">Sign</span><div class="grow"><b><a href="/agreements/${esc(a.id)}">${esc(a.title)}</a></b><small>${esc(KINDS[a.kind] || "Agreement")} sent ${esc(relTime(a.sent_at))}</small></div><a class="btn sm" href="/agreements/${esc(a.id)}">Review and sign</a></div>`);
+    }
+    for (const i of invs) {
+      const od = i.due_date < today;
+      needs.push(`<div class="row"><span class="bdg ${od ? "red" : "blue"}">${od ? "Overdue" : "Pay"}</span><div class="grow"><b><a href="/billing/invoices/${esc(i.id)}">Invoice ${esc(i.number)}</a></b><small>${esc(fmtMoney(balanceOf(i), i.currency))} ${od ? "was due" : "due"} ${esc(fmtBillDate(i.due_date))}</small></div><a class="btn sm${od ? " pri" : ""}" href="/billing/invoices/${esc(i.id)}">View${od ? " and pay" : ""}</a></div>`);
+    }
     for (const mi of pend) {
       needs.push(`<div class="row"><span class="bdg blue">Confirm</span><div class="grow"><b><a href="/meetings/${esc(mi.meeting_id)}">Minutes of “${esc(mi.title)}”</a></b><small>Confirm or raise a correction. Confirms automatically on ${esc(fmtWhen(mi.confirm_due_at))}.</small></div><a class="btn sm" href="/meetings/${esc(mi.meeting_id)}">Review</a></div>`);
     }
@@ -66,7 +78,7 @@ export async function clientRoute(request, env, ctx, mail, path) {
         lead: "Anything waiting on you shows up first. Everything else about our work together is one click away on the left.",
       })}
       <div class="sec needs" style="margin-top:0"><div class="card-h"><h2>Needs your action${needs.length ? ` <span class="cnt">${needs.length}</span>` : ""}</h2></div>
-        ${needs.length ? `<div class="rows">${needs.join("")}</div>` : `<div class="empty"><b>Nothing needs you right now.</b>When there's minutes to confirm, a message for you, an action on your side, or later an agreement to sign or an invoice to pay, it'll appear here first.</div>`}</div>
+        ${needs.length ? `<div class="rows">${needs.join("")}</div>` : `<div class="empty"><b>Nothing needs you right now.</b>When there's an agreement to sign, an invoice to pay, minutes to confirm, a message for you or an action on your side, it'll appear here first.</div>`}</div>
       <div class="grid g3 sec">
         <div class="card"><div class="k">Next meeting</div>${
           next
@@ -76,7 +88,11 @@ export async function clientRoute(request, env, ctx, mail, path) {
         <div class="card"><div class="k">Projects</div><h3 style="margin-top:10px">Being set up</h3><p class="small muted" style="margin:0">Your milestones and deliverables will appear here as soon as we add them.</p></div>
         ${
           canMoney
-            ? `<div class="card"><div class="k">Billing · ${esc(company.currency)}</div><h3 style="margin-top:10px">Nothing due</h3><p class="small muted" style="margin:0">Invoices and the payment schedule will show here, with online payment.</p></div>`
+            ? `<div class="card"><div class="k">Billing · ${esc(company.currency)}</div>${
+                invs.length
+                  ? `<h3 style="margin-top:10px">${esc(fmtMoney(invs.reduce((x, i) => x + balanceOf(i), 0), company.currency))} outstanding</h3><p class="small muted" style="margin:0 0 14px">${invs.length} unpaid invoice${invs.length === 1 ? "" : "s"} · next due ${esc(fmtBillDate(invs[0].due_date))}</p>`
+                  : `<h3 style="margin-top:10px">Nothing due</h3><p class="small muted" style="margin:0 0 14px">You're all paid up.</p>`
+              }<a class="btn sm" href="/billing">Billing</a></div>`
             : `<div class="card"><div class="k">Your team</div><h3 style="margin-top:10px">${people.length} ${people.length === 1 ? "person" : "people"}</h3><p class="small muted" style="margin:0 0 14px">${lastSignIns} signed in so far.</p><a class="btn sm" href="/team">See your team</a></div>`
         }
       </div>

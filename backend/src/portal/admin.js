@@ -6,6 +6,7 @@ import { html, redirect, readForm, clientIp, flashFrom, nonce } from "./http.js"
 import { isStaffEmail, createLoginToken, sendSignInEmail, INVITE_TTL } from "./auth.js";
 import { threadsForCompany, threadRows } from "./messages.js";
 import { fmtWhen, fmtDay, todayIST } from "./time.js";
+import { fmtMoney } from "./money.js";
 
 // GSTIN state codes → state, so a GSTIN fills in the state if it's left blank.
 const GST_STATE = {
@@ -332,6 +333,9 @@ export async function adminRoute(request, env, ctx, mail, path) {
       const meetings = (await env.DB.prepare(`SELECT mt.*, mi.status AS minutes_status FROM portal_meetings mt LEFT JOIN portal_minutes mi ON mi.meeting_id = mt.id WHERE mt.company_id = ? ORDER BY mt.starts_at DESC LIMIT 6`).bind(company.id).all()).results || [];
       const acts = (await env.DB.prepare(`SELECT a.*, mt.title AS meeting_title FROM portal_action_items a JOIN portal_meetings mt ON mt.id = a.meeting_id WHERE a.company_id = ? AND a.published = 1 AND a.status = 'open' ORDER BY a.due_date IS NULL, a.due_date LIMIT 12`).bind(company.id).all()).results || [];
       const threads = await threadsForCompany(env, ctx, company.id, 5);
+      const cInvs = (await env.DB.prepare(`SELECT * FROM portal_invoices WHERE company_id = ? ORDER BY created_at DESC LIMIT 6`).bind(company.id).all()).results || [];
+      const cDue = (await env.DB.prepare(`SELECT COALESCE(SUM(total - paid - tds),0) AS d FROM portal_invoices WHERE company_id = ? AND status = 'issued'`).bind(company.id).first()).d;
+      const cAgr = (await env.DB.prepare(`SELECT * FROM portal_agreements WHERE company_id = ? ORDER BY updated_at DESC LIMIT 6`).bind(company.id).all()).results || [];
       const today = todayIST();
       const mStatus = (m) => m.status === "cancelled" ? "Cancelled" : m.status === "requested" ? "Requested" : m.minutes_status === "published" ? "Minutes to confirm" : m.minutes_status === "correction" ? "Correction raised" : m.minutes_status === "confirmed" ? "Confirmed" : m.minutes_status === "draft" ? "Minutes drafted" : m.starts_at + m.duration_min * 60 < Date.now() / 1000 ? "Needs minutes" : "Scheduled";
       const archived = company.status === "archived";
@@ -373,6 +377,16 @@ export async function adminRoute(request, env, ctx, mail, path) {
           <div>
             <div class="card-h"><h2>People</h2><span class="muted small">${people.length} with access</span></div>
             ${peopleHtml}
+            <div class="sec"><div class="card-h"><h2>Billing</h2><span class="actions"><span class="small muted">${esc(fmtMoney(cDue, company.currency))} outstanding</span><a class="btn sm" href="/admin/billing/schedules/new?client=${esc(company.id)}">Schedule</a><a class="btn sm" href="/admin/billing/invoices/new?client=${esc(company.id)}">Invoice</a></span></div>${
+              cInvs.length
+                ? `<div class="rows">${cInvs.map((i) => `<a class="row thread" href="/admin/billing/invoices/${esc(i.id)}"><div class="grow"><b>${esc(i.number || "Draft invoice")}</b><small>${esc(fmtMoney(i.total, i.currency))}${i.due_date ? ` · due ${esc(i.due_date)}` : ""}</small></div><span class="bdg ${{ draft: "grey", issued: "blue", paid: "green", void: "grey" }[i.status]}">${{ draft: "Draft", issued: "Unpaid", paid: "Paid", void: "Cancelled" }[i.status]}</span></a>`).join("")}</div>`
+                : `<div class="empty">No invoices yet.</div>`
+            }</div>
+            <div class="sec"><div class="card-h"><h2>Agreements</h2><a class="btn sm" href="/admin/agreements/new?client=${esc(company.id)}">New</a></div>${
+              cAgr.length
+                ? `<div class="rows">${cAgr.map((g) => `<a class="row thread" href="/admin/agreements/${esc(g.id)}"><div class="grow"><b>${esc(g.title)}</b><small>${esc(g.kind.replace("_", " "))}</small></div><span class="bdg ${{ signed: "green", sent: "blue", declined: "red" }[g.status] || "grey"}">${esc({ draft: "Draft", sent: "Awaiting signature", signed: "Signed", declined: "Declined", void: "Withdrawn", superseded: "Replaced" }[g.status])}</span></a>`).join("")}</div>`
+                : `<div class="empty">No agreements yet.</div>`
+            }</div>
             <div class="sec"><div class="card-h"><h2>Meetings</h2><a class="btn sm" href="/admin/meetings/new?client=${esc(company.id)}">Schedule</a></div>${
               meetings.length
                 ? `<div class="rows">${meetings.map((m) => `<a class="row thread" href="/admin/meetings/${esc(m.id)}"><div class="grow"><b>${esc(m.title)}</b><small>${m.starts_at ? esc(fmtWhen(m.starts_at)) : "Time to be confirmed"}</small></div><span class="bdg ${/Needs|Correction|Requested/.test(mStatus(m)) ? "amber" : "grey"}">${mStatus(m)}</span></a>`).join("")}</div>`

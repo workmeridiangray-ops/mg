@@ -3,18 +3,19 @@
 
 import { esc } from "./ui.js";
 
-export async function companyRecipients(env, companyId, exceptUserId = null) {
+export async function companyRecipients(env, companyId, exceptUserId = null, roles = null) {
   const r = await env.DB.prepare(
-    `SELECT u.id, u.email, u.name FROM portal_memberships m JOIN portal_users u ON u.id = m.user_id
+    `SELECT u.id, u.email, u.name, m.role FROM portal_memberships m JOIN portal_users u ON u.id = m.user_id
       WHERE m.company_id = ? AND u.status = 'active'`
   )
     .bind(companyId)
     .all();
-  return (r.results || []).filter((u) => u.id !== exceptUserId);
+  return (r.results || []).filter((u) => u.id !== exceptUserId && (!roles || roles.includes(u.role)));
 }
 
-export async function emailCompany(env, mail, companyId, { subject, html, exceptUserId = null }) {
-  const people = await companyRecipients(env, companyId, exceptUserId);
+// roles: limit to e.g. ["owner", "finance"] for money matters.
+export async function emailCompany(env, mail, companyId, { subject, html, exceptUserId = null, roles = null }) {
+  const people = await companyRecipients(env, companyId, exceptUserId, roles);
   let sent = 0;
   for (const p of people) {
     try {

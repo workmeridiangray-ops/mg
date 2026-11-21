@@ -38,6 +38,9 @@ jobs:
           put GOOGLE_CLIENT_SECRET "$GOOGLE_CLIENT_SECRET"
           put ZOHO_CLIENT_ID "$ZOHO_CLIENT_ID"
           put ZOHO_CLIENT_SECRET "$ZOHO_CLIENT_SECRET"
+          put RAZORPAY_KEY_ID "$RAZORPAY_KEY_ID"
+          put RAZORPAY_KEY_SECRET "$RAZORPAY_KEY_SECRET"
+          put RAZORPAY_WEBHOOK_SECRET "$RAZORPAY_WEBHOOK_SECRET"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
@@ -45,3 +48,6 @@ jobs:
           GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
           ZOHO_CLIENT_ID: ${{ secrets.ZOHO_CLIENT_ID }}
           ZOHO_CLIENT_SECRET: ${{ secrets.ZOHO_CLIENT_SECRET }}
+          RAZORPAY_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+          RAZORPAY_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+          RAZORPAY_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
