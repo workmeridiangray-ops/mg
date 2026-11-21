@@ -15,6 +15,7 @@ Meridian Gray runs a free 5-minute Business Health Check that scores a company's
 - [Contact](https://www.meridiangray.in/where-to-find-us): Tell us what is slowing your business down. Email, call or WhatsApp Meridian Gray, send a 2-minute brief, or visit us at Center Point, B.B.D. Bagh, Kolkata.
 
 ## Insights — English
+
 - [AI for sales teams: what to automate first](https://www.meridiangray.in/blog-ai-for-sales-teams-what-to-automate-first)
 - [AI for accounts and finance teams: invoices, reconciliation and reports](https://www.meridiangray.in/blog-ai-for-accounts-and-finance-teams)
 - [AI-written content and SEO: what Google actually penalises](https://www.meridiangray.in/blog-ai-written-content-and-seo-what-google-penalises)
@@ -287,6 +288,7 @@ Meridian Gray runs a free 5-minute Business Health Check that scores a company's
 - [Why your product catalogue is costing you sales](https://www.meridiangray.in/blog-why-your-product-catalogue-is-costing-you-sales)
 
 ## Insights — Hindi / Hinglish
+
 - [Website banwane mein kitna kharcha aata hai?](https://www.meridiangray.in/blog-website-banwane-mein-kitna-kharcha-aata-hai)
 - [SEO kya hai aur chhote business ke liye kaise kaam karta hai?](https://www.meridiangray.in/blog-seo-kya-hai-chhote-business-ke-liye)
 - [Google Ads kaise chalayein: shuruaat ke liye guide](https://www.meridiangray.in/blog-google-ads-kaise-chalayein-shuruaat-ke-liye-guide)
