@@ -352,9 +352,13 @@ async function handleContact(request, env) {
     planned_investment = "",
   } = body;
 
-  if (!name || !isEmail(email) || !main_problem) {
-    return json({ error: "name, a valid email, and main_problem are required" }, 400, env);
+  // Blog help forms may send a phone number instead of an email; either is enough to reach someone.
+  const phoneDigits = String(phone).replace(/\D/g, "");
+  const hasEmail = isEmail(email);
+  if (!name || !main_problem || (!hasEmail && phoneDigits.length < 10)) {
+    return json({ error: "name, main_problem and a valid email or phone number are required" }, 400, env);
   }
+  const fromBlog = /^From blog:/.test(String(current_process));
 
   await env.DB.prepare(
     `INSERT INTO contact_submissions
@@ -364,21 +368,22 @@ async function handleContact(request, env) {
     .bind(name, business_name, industry, email, phone, website, main_problem, current_process, preferred_contact, planned_investment)
     .run();
 
+  const h = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
   await sendBrevoEmail(env, {
-    subject: `New enquiry — ${business_name || name}`,
-    replyTo: email,
+    subject: fromBlog ? `Blog lead — ${main_problem}` : `New enquiry — ${business_name || name}`,
+    replyTo: hasEmail ? email : undefined,
     htmlContent: `
-      <h2>New project brief submitted</h2>
-      <p><b>Name:</b> ${name}</p>
-      <p><b>Business:</b> ${business_name}</p>
-      <p><b>Industry:</b> ${industry}</p>
-      <p><b>Email:</b> ${email}</p>
-      <p><b>Phone/WhatsApp:</b> ${phone}</p>
-      <p><b>Website:</b> ${website}</p>
-      <p><b>Main problem:</b> ${main_problem}</p>
-      <p><b>How it works today:</b> ${current_process}</p>
-      <p><b>Preferred contact:</b> ${preferred_contact}</p>
-      <p><b>Planned investment:</b> ${planned_investment}</p>
+      <h2>${fromBlog ? "New lead from a blog post" : "New project brief submitted"}</h2>
+      <p><b>Name:</b> ${h(name)}</p>
+      <p><b>Business:</b> ${h(business_name)}</p>
+      <p><b>Industry:</b> ${h(industry)}</p>
+      <p><b>Email:</b> ${h(email)}</p>
+      <p><b>Phone/WhatsApp:</b> ${h(phone)}</p>
+      <p><b>Website:</b> ${h(website)}</p>
+      <p><b>Main problem:</b> ${h(main_problem)}</p>
+      <p><b>${fromBlog ? "Source" : "How it works today"}:</b> ${h(current_process)}</p>
+      <p><b>Preferred contact:</b> ${h(preferred_contact)}</p>
+      <p><b>Planned investment:</b> ${h(planned_investment)}</p>
     `,
   });
 
